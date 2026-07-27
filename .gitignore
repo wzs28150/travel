@@ -1,0 +1,17 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+
+# 环境变量 / 密钥
+.env
+
+# 本地项目状态（WorkBuddy 运行时数据，非源码）
+.workbuddy/
+
+# 操作系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
