@@ -1,0 +1,66 @@
+version: "3.8"
+
+# 部署版 compose：直接使用已导出的镜像（docker load 后），不依赖源码。
+# 用法：
+#   1) 把 deploy/ 整个目录传到服务器
+#   2) docker load -i travel-images.tar
+#   3) docker compose up -d
+# 注意：mysql:8.0 为公开镜像，若服务器可联网会自动拉取；若离线，请先 docker pull mysql:8.0 再 load 进 tar。
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: travel_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: travel_db
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: travel-backend:latest
+    container_name: travel_backend
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      BASE_URL: ""
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpass
+      DB_NAME: travel_db
+      JWT_SECRET: please_change_this_to_a_long_random_secret
+      JWT_EXPIRES: 7d
+      UPLOAD_DIR: uploads
+      STORAGE_LIMIT: 2147483648
+    volumes:
+      - backend_uploads:/app/uploads
+    expose:
+      - "3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: travel-frontend:latest
+    container_name: travel_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  backend_uploads:

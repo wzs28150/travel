@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  # ---------- MySQL ----------
+  mysql:
+    image: mysql:8.0
+    container_name: travel_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: travel_db
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------- 后端 ----------
+  backend:
+    build: ./server
+    container_name: travel_backend
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      BASE_URL: ""               # 空串 -> 上传返回相对路径 /uploads/xxx，由 nginx 反代
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpass
+      DB_NAME: travel_db
+      JWT_SECRET: please_change_this_to_a_long_random_secret
+      JWT_EXPIRES: 7d
+      UPLOAD_DIR: uploads
+      STORAGE_LIMIT: 2147483648  # 2GB
+    volumes:
+      - backend_uploads:/app/uploads
+    expose:
+      - "3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ---------- 前端 ----------
+  frontend:
+    build: ./front-end
+    container_name: travel_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  backend_uploads:
