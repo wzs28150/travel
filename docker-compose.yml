@@ -1,3 +1,5 @@
+# 本地开发/测试用：含 mysql 容器（占用本机 3306），一键 `docker compose up -d`
+# 生产服务器若已自带 MySQL（3306 被占用）请勿使用本文件，改用 deploy/README.md 的「方式 B：服务器原生部署」
 version: "3.8"
 
 services:
