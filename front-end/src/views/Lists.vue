@@ -62,7 +62,7 @@
       <div class="sheet">
         <div class="sheet-title">新建旅行</div>
         <t-input v-model="form.title" label="标题" placeholder="给这次旅行起个名字" />
-        <t-cell title="目的地" :note="form.cities.length ? form.cities.join('、') : '请选择'" arrow @click="showCityPicker = true" />
+        <t-cell title="目的地" :note="form.regionText || '请选择省/市/区'" arrow @click="showRegion = true" />
         <t-cell title="开始日期" :note="form.startDate || '请选择'" arrow @click="openDate('start')" />
         <t-cell title="结束日期" :note="form.endDate || '请选择'" arrow @click="openDate('end')" />
         <t-input v-model="form.budgetTotal" label="预算(元)" type="number" placeholder="选填" />
@@ -87,29 +87,16 @@
       />
     </t-popup>
 
-    <!-- 目的地城市选择（多选） -->
-    <t-popup v-model="showCityPicker" placement="bottom">
-      <div class="city-sheet">
-        <div class="sheet-bar">
-          <span class="sheet-title">选择目的地（可多选）</span>
-          <t-button size="small" theme="primary" @click="showCityPicker = false">确定</t-button>
-        </div>
-        <div class="city-body">
-          <div v-for="region in REGIONS" :key="region" class="region-block">
-            <div class="region-label">{{ region }}</div>
-            <div class="city-chips">
-              <span
-                v-for="c in cityByRegion(region)"
-                :key="c.name"
-                class="chip"
-                :class="{ active: form.cities.includes(c.name) }"
-                @click="toggleCity(c.name)"
-              >{{ c.name }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </t-popup>
+    <!-- 目的地：全国省市区三级联动选择 -->
+    <t-cascader
+      v-model="form.regionCode"
+      v-model:visible="showRegion"
+      :options="regionOptions"
+      :keys="{ label: 'name', value: 'code', children: 'children' }"
+      title="选择目的地"
+      :check-strictly="true"
+      @change="onRegionChange"
+    />
 
     <app-tab-bar active="lists" />
   </div>
@@ -120,7 +107,7 @@ import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { Toast } from 'tdesign-mobile-vue'
 import { useTravelStore } from '../stores/travel'
-import { CITIES, REGIONS } from '../data/cities'
+import regionOptions from '../data/china-pca.json'
 import AppTabBar from '../components/AppTabBar.vue'
 
 const store = useTravelStore()
@@ -132,14 +119,17 @@ const filtered = computed(() =>
 )
 
 const showCreate = ref(false)
-const form = reactive({ title: '', cities: [], startDate: '', endDate: '', budgetTotal: '' })
-const showCityPicker = ref(false)
-function toggleCity(name) {
-  const i = form.cities.indexOf(name)
-  if (i > -1) form.cities.splice(i, 1)
-  else form.cities.push(name)
+const form = reactive({ title: '', regionCode: '', regionText: '', cityName: '', startDate: '', endDate: '', budgetTotal: '' })
+const showRegion = ref(false)
+// t-cascader 是单选值(value=叶子code)，整条路径通过 @change(value, selectedOptions) 拿到
+function onRegionChange(value, selectedOptions) {
+  form.regionCode = value
+  const opts = selectedOptions || []
+  form.regionText = opts.map((o) => o.name).join(' / ')
+  let cityName = opts[0]?.name
+  if (opts[1] && opts[1].name !== '市辖区' && opts[1].name !== '县') cityName = opts[1].name
+  form.cityName = cityName
 }
-const cityByRegion = (region) => CITIES.filter((c) => c.region === region)
 
 const showDate = ref(false)
 const dateVal = ref('')
@@ -164,13 +154,15 @@ async function createTravel() {
   try {
     const id = await store.addTravel({
       title: form.title.trim(),
-      cities: [...form.cities],
+      region: form.regionCode ? [form.regionCode] : [],
+      destination: form.regionText,
+      cityName: form.cityName,
       startDate: form.startDate,
       endDate: form.endDate,
       budgetTotal: Number(form.budgetTotal) || 0,
     })
     showCreate.value = false
-    Object.assign(form, { title: '', cities: [], startDate: '', endDate: '', budgetTotal: '' })
+    Object.assign(form, { title: '', regionCode: '', regionText: '', cityName: '', startDate: '', endDate: '', budgetTotal: '' })
     router.push(`/travel/${id}`)
   } catch (e) {
     Toast({ message: e.message || '创建失败', theme: 'error' })
@@ -279,55 +271,5 @@ const todoCount = (t) => `${t.todos?.filter((x) => x.done).length || 0}/${t.todo
   display: flex;
   gap: 12px;
   margin-top: 20px;
-}
-.city-sheet {
-  padding: 12px 16px calc(env(safe-area-inset-bottom) + 16px);
-  border-radius: 16px 16px 0 0;
-  max-height: 72vh;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-}
-.sheet-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.sheet-bar .sheet-title {
-  font-size: 17px;
-  font-weight: 700;
-}
-.city-body {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.region-block {
-  margin-bottom: 14px;
-}
-.region-label {
-  font-size: 12px;
-  color: var(--text-2);
-  margin-bottom: 8px;
-}
-.city-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.chip {
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: #f2f3f5;
-  color: var(--text-1);
-  font-size: 13px;
-  border: 1px solid transparent;
-  transition: all 0.18s ease;
-}
-.chip.active {
-  background: var(--brand-light, #fff1e8);
-  color: var(--brand);
-  border-color: var(--brand);
-  font-weight: 600;
 }
 </style>
