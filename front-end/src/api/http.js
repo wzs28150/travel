@@ -1,5 +1,5 @@
 // 统一请求封装（相对路径 /api，由 Vite 代理到后端）
-const TOKEN_KEY = 'cat-token'
+const TOKEN_KEY = 'lvji-token'
 const BASE = '/api'
 
 export function getToken() {

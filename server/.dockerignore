@@ -1,0 +1,9 @@
+node_modules
+.git
+.env
+uploads
+.workbuddy
+*.log
+npm-debug.log*
+Dockerfile
+.dockerignore

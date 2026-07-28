@@ -30,6 +30,6 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(config.port, () => {
-  console.log(`[server] 猫途迹后端已启动: http://localhost:${config.port}`);
+  console.log(`[server] 旅迹后端已启动: http://localhost:${config.port}`);
   console.log(`[server] 上传目录: ${config.uploadDir}`);
 });

@@ -1,8 +1,8 @@
 <template>
   <div class="auth-page">
     <div class="auth-hero">
-      <div class="logo">🐱</div>
-      <div class="brand">猫途迹</div>
+      <div class="logo">🧭</div>
+      <div class="brand">旅迹</div>
       <div class="slogan">创建账号，开启你的旅行相册</div>
     </div>
 

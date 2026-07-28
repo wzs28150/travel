@@ -68,7 +68,7 @@
         <t-cell title="帮助与反馈" arrow>
           <template #leftIcon><t-icon name="help-circle" size="20px" color="#00a870" /></template>
         </t-cell>
-        <t-cell title="关于猫途迹" note="v1.0.0" arrow>
+        <t-cell title="关于旅迹" note="v1.0.0" arrow>
           <template #leftIcon><t-icon name="info-circle" size="20px" color="#8a8a8a" /></template>
         </t-cell>
         <t-cell title="退出登录" @click="logout">
