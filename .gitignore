@@ -19,3 +19,4 @@ npm-debug.log*
 # 部署目录 deploy/ 内的镜像与压缩包（大二进制，单独传输服务器，不入库）
 deploy/*.tar
 deploy.tar.gz
+deploy/.tmp-*
