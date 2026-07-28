@@ -2,7 +2,9 @@
   <div class="app-root">
     <router-view v-slot="{ Component }">
       <keep-alive :include="['Lists', 'Footprints', 'Mine']">
-        <component :is="Component" />
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
       </keep-alive>
     </router-view>
   </div>

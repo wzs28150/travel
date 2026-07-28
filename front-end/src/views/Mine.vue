@@ -1,8 +1,8 @@
 <template>
-  <div class="page" name="Mine">
+  <div class="page mine-page" name="Mine">
     <div class="mine-header">
       <div class="profile" @click="goEdit">
-        <t-avatar :image="user.avatar" size="64px">
+        <t-avatar :image="user.avatar" size="64px" class="avatar-ring">
           <template v-if="!user.avatar">{{ (user.nickname || '旅').slice(0, 1) }}</template>
         </t-avatar>
         <div class="p-info">
@@ -20,10 +20,12 @@
           <div class="ms-num">{{ store.travels.length }}</div>
           <div class="ms-lbl">旅行</div>
         </div>
+        <div class="ms-sep"></div>
         <div class="ms">
           <div class="ms-num">{{ store.visitedCities.size }}</div>
           <div class="ms-lbl">城市</div>
         </div>
+        <div class="ms-sep"></div>
         <div class="ms">
           <div class="ms-num">{{ photoCount }}</div>
           <div class="ms-lbl">照片</div>
@@ -40,8 +42,8 @@
         </div>
         <t-progress
           :percentage="storagePercent"
-          :color="{ from: '#ff9a5a', to: '#ff7a45' }"
-          style="margin-top:12px"
+          :color="{ from: '#ffb07a', to: '#ff7a45' }"
+          style="margin-top:14px"
         />
         <div class="s-foot">
           <span>剩余 {{ freeText }}</span>
@@ -49,7 +51,7 @@
         </div>
       </div>
 
-      <t-cell-group theme="card" style="border-radius:14px;overflow:hidden">
+      <t-cell-group theme="card" class="mine-group">
         <t-cell title="编辑个人信息" arrow @click="goEdit">
           <template #leftIcon><t-icon name="user-1" size="20px" color="#ff7a45" /></template>
         </t-cell>
@@ -64,7 +66,7 @@
         </t-cell>
       </t-cell-group>
 
-      <t-cell-group theme="card" style="border-radius:14px;overflow:hidden;margin-top:12px">
+      <t-cell-group theme="card" class="mine-group">
         <t-cell title="帮助与反馈" arrow>
           <template #leftIcon><t-icon name="help-circle" size="20px" color="#00a870" /></template>
         </t-cell>
@@ -150,15 +152,25 @@ function logout() {
 </script>
 
 <style scoped>
+.mine-page { background: transparent; }
+
 .mine-header {
   background: var(--brand-gradient);
   color: #fff;
-  padding: calc(env(safe-area-inset-top) + 24px) 16px 16px;
+  padding: calc(env(safe-area-inset-top) + 26px) 18px 20px;
 }
+
+.avatar-ring :deep(.t-avatar) {
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
 .profile {
   display: flex;
   align-items: center;
   gap: 14px;
+  position: relative;
+  z-index: 1;
 }
 .p-info {
   flex: 1;
@@ -174,14 +186,25 @@ function logout() {
 .p-sign {
   font-size: 12px;
   opacity: 0.9;
-  margin: 4px 0 6px;
+  margin: 4px 0 8px;
 }
+.p-tags {
+  display: flex;
+  gap: 6px;
+}
+
 .mini-stats {
   display: flex;
-  margin-top: 18px;
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  padding: 10px 0;
+  align-items: center;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+  padding: 12px 0;
+  position: relative;
+  z-index: 1;
 }
 .ms {
   flex: 1;
@@ -193,13 +216,28 @@ function logout() {
 }
 .ms-lbl {
   font-size: 11px;
-  opacity: 0.9;
+  opacity: 0.92;
+  margin-top: 2px;
+}
+.ms-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* 与下方 t-cell-group 对齐（统一左右 12px 外边距） */
+.storage-card {
+  margin: 0 12px 12px;
 }
 .storage-card .s-title {
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 6px;
+  color: var(--text-1);
+}
+.storage-card .s-title :deep(.t-icon) {
+  color: #ff7a45;
 }
 .s-detail {
   font-size: 13px;
@@ -209,8 +247,19 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 12px;
   color: var(--text-2);
+}
+
+.mine-group {
+  border-radius: 16px;
+  overflow: hidden;
+}
+:deep(.t-cell-group) {
+  margin: 0 12px 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--card-bg);
 }
 </style>

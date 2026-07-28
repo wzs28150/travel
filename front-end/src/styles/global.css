@@ -1,13 +1,17 @@
 :root {
   --brand: #ff7a45;
   --brand-light: #fff0e8;
-  --brand-gradient: linear-gradient(135deg, #ff9a5a 0%, #ff7a45 100%);
-  --page-bg: #f5f6f8;
+  --brand-soft: #ffe9dd;
+  --brand-gradient: linear-gradient(135deg, #ffb07a 0%, #ff7a45 55%, #ff6a35 100%);
+  --brand-gradient-soft: linear-gradient(135deg, #fff1e8 0%, #ffe3d3 100%);
+  --page-bg: linear-gradient(180deg, #fff6f0 0%, #f6f7f9 32%, #f4f5f8 100%);
   --card-bg: #ffffff;
   --text-1: #1a1a1a;
-  --text-2: #666;
-  --text-3: #999;
-  --border: #ededed;
+  --text-2: #6b6b6b;
+  --text-3: #9aa0a6;
+  --border: #f0f0f2;
+  --shadow-card: 0 6px 20px rgba(28, 30, 56, 0.06), 0 2px 6px rgba(28, 30, 56, 0.04);
+  --shadow-float: 0 12px 30px rgba(255, 122, 69, 0.18);
   --td-brand-color: #ff7a45;
   --td-brand-color-active: #f5602f;
 }
@@ -68,10 +72,12 @@ body {
 
 .card {
   background: var(--card-bg);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 16px;
+  padding: 16px;
   margin-bottom: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .empty {
@@ -104,7 +110,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  box-shadow: 0 6px 16px rgba(255, 122, 69, 0.4);
+  box-shadow: var(--shadow-float);
   z-index: 100;
   border: none;
 }
@@ -115,3 +121,49 @@ body {
   white-space: nowrap;
 }
 
+/* ===== 入场动画 ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.page-scroll > * {
+  animation: fadeInUp 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.page-scroll > *:nth-child(1) { animation-delay: 0.04s; }
+.page-scroll > *:nth-child(2) { animation-delay: 0.10s; }
+.page-scroll > *:nth-child(3) { animation-delay: 0.16s; }
+.page-scroll > *:nth-child(4) { animation-delay: 0.22s; }
+.page-scroll > *:nth-child(5) { animation-delay: 0.28s; }
+.page-scroll > *:nth-child(n+6) { animation-delay: 0.34s; }
+
+/* ===== 顶部 header 高光质感 ===== */
+.app-header::after,
+.mine-header::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+}
+.mine-header { position: relative; }
+
+/* ===== 页面切换过渡 ===== */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+.page-enter-from { opacity: 0; transform: translateY(14px); }
+.page-leave-to { opacity: 0; transform: translateY(-10px); }
+
+/* ===== 尊重无障碍：减少动态 ===== */
+@media (prefers-reduced-motion: reduce) {
+  .page-scroll > * { animation: none; }
+}
