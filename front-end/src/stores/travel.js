@@ -41,15 +41,20 @@ export const useTravelStore = defineStore('travel', {
 
     // ---- 旅行 ----
     async addTravel(data) {
+      const cities = Array.isArray(data.cities) && data.cities.length
+        ? data.cities
+        : data.destination
+          ? [data.destination]
+          : []
       const payload = {
         title: data.title,
-        destination: data.destination || '',
+        destination: cities.join('、'),
         startDate: data.startDate || '',
         endDate: data.endDate || '',
         status: 'planning',
         cover: data.cover || '',
         budgetTotal: data.budgetTotal || 0,
-        cities: data.destination ? [data.destination] : [],
+        cities,
         itinerary: [],
         luggage: [],
         todos: [],
