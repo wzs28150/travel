@@ -16,6 +16,6 @@ COPY . .
 # 确保上传目录存在
 RUN mkdir -p uploads
 
-EXPOSE 3000
+EXPOSE 8089
 
 CMD ["node", "src/index.js"]

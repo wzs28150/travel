@@ -28,7 +28,7 @@ services:
     container_name: travel_backend
     restart: unless-stopped
     environment:
-      PORT: 3000
+      PORT: 8089
       BASE_URL: ""               # 空串 -> 上传返回相对路径 /uploads/xxx，由 nginx 反代
       DB_HOST: mysql
       DB_PORT: 3306
@@ -42,7 +42,7 @@ services:
     volumes:
       - backend_uploads:/app/uploads
     expose:
-      - "3000"
+      - "8089"
     depends_on:
       mysql:
         condition: service_healthy
@@ -53,7 +53,7 @@ services:
     container_name: travel_frontend
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8090:80"
     depends_on:
       - backend
 

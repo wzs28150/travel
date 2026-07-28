@@ -18,3 +18,6 @@ npm-debug.log*
 
 # 部署导出镜像（大二进制，单独传输，不入库）
 deploy/*.tar
+# 合并打包的部署产物（含镜像 tar + 配置，单独传输服务器，不入库）
+travel-deploy/
+travel-deploy.tar.gz

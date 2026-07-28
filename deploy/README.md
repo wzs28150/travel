@@ -20,8 +20,8 @@ docker load -i travel-images.tar
 docker compose up -d
 
 # 4) 访问
-#    前端:  http://<服务器IP>:8080
-#    后端:  http://<服务器IP>:3000  (仅容器内，外部经 8080 的 nginx 访问)
+#    前端:  http://<服务器IP>:8090
+#    后端:  http://<服务器IP>:8089  (仅容器内，外部经 8090 的 nginx 访问)
 ```
 
 ## 生产注意事项
