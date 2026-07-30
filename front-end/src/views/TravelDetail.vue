@@ -185,7 +185,7 @@
           <t-input v-model="af.title" label="活动" placeholder="如：游览外滩" />
           <t-cell title="时间" :note="af.time || '请选择日期时间'" arrow @click="openTime" />
           <t-input v-model="af.note" label="备注" placeholder="选填" />
-          <t-cell title="交通方式" :note="af.transportMode || '选填（到达此地的方式）'" arrow @click="showTransport = true" />
+          <t-cell title="交通方式" :note="af.transportMode || '选填（到达此地的方式）'" arrow @click="openTransport" />
           <t-input v-if="isPublicTransit" v-model="af.transportRoute" label="线路提示" placeholder="如：地铁2号线 → 1号线，人民广场站换乘" />
         </template>
 
@@ -413,7 +413,7 @@ const af = reactive({})
 // 行程时间 / 交通方式
 const transportModes = ['步行', '打车', '滴滴', '地铁公交', '公交', '骑行', '自驾', '高铁', '飞机', '其他']
 const publicTransitModes = ['地铁公交', '公交']
-const transportColumns = [transportModes]
+const transportColumns = [transportModes.map((m) => ({ label: m, value: m }))]
 const transportEmoji = {
   步行: '🚶', 打车: '🚕', 滴滴: '🚗', 地铁公交: '🚇', 公交: '🚌',
   骑行: '🚲', 自驾: '🚗', 高铁: '🚄', 飞机: '✈️', 其他: '📍',
@@ -447,6 +447,10 @@ function confirmTime(v) {
 
 const showTransport = ref(false)
 const transportVal = ref([])
+function openTransport() {
+  transportVal.value = af.transportMode ? [af.transportMode] : []
+  showTransport.value = true
+}
 function confirmTransport(val) {
   const arr = Array.isArray(val) ? val : [val]
   const m = arr[0] || ''
