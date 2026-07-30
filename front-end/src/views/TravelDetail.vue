@@ -59,13 +59,20 @@
         <!-- 行程 -->
         <div v-show="tab === 'itinerary'">
           <div v-if="!travel.itinerary.length" class="empty">还没有行程安排</div>
-          <div v-for="(group, day) in itineraryByDay" :key="day" class="day-group">
-            <div class="day-head">第 {{ day }} 天</div>
-            <div v-for="it in group" :key="it.id" class="tl-item">
+          <div v-for="(it, i) in flatItinerary" :key="it.id" class="it-wrap">
+            <div v-if="i === 0 || dayOf(it) !== dayOf(flatItinerary[i - 1])" class="day-head">
+              第 {{ dayOf(it) }} 天<span v-if="dayDate(it)" class="day-date"> · {{ dayDate(it) }}</span>
+            </div>
+            <div v-if="i > 0 && it.transport && it.transport.mode" class="tl-connector">
+              <span class="tp-emoji">{{ tpEmoji(it.transport.mode) }}</span>
+              <span class="tp-mode">{{ it.transport.mode }}</span>
+              <span v-if="it.transport.route" class="tp-route">· {{ it.transport.route }}</span>
+            </div>
+            <div class="tl-item">
               <div class="tl-dot" :class="{ done: it.done }"></div>
               <div class="tl-content" @click="toggleItinerary(it)">
                 <div class="flex-between">
-                  <span class="tl-time">{{ it.time }}</span>
+                  <span class="tl-time">{{ displayTime(it) }}</span>
                   <t-icon name="delete" size="16px" color="#ccc" @click.stop="del('itinerary', it.id)" />
                 </div>
                 <div class="tl-title" :class="{ done: it.done }">{{ it.title }}</div>
@@ -176,9 +183,10 @@
 
         <template v-if="tab === 'itinerary'">
           <t-input v-model="af.title" label="活动" placeholder="如：游览外滩" />
-          <t-input v-model.number="af.day" label="第几天" type="number" placeholder="1" />
-          <t-input v-model="af.time" label="时间" placeholder="如 09:00" />
+          <t-cell title="时间" :note="af.time || '请选择日期时间'" arrow @click="openTime" />
           <t-input v-model="af.note" label="备注" placeholder="选填" />
+          <t-cell title="交通方式" :note="af.transportMode || '选填（到达此地的方式）'" arrow @click="showTransport = true" />
+          <t-input v-if="isPublicTransit" v-model="af.transportRoute" label="线路提示" placeholder="如：地铁2号线 → 1号线，人民广场站换乘" />
         </template>
 
         <template v-else-if="tab === 'luggage'">
@@ -201,6 +209,35 @@
           <t-button theme="primary" block @click="submitAdd">添加</t-button>
         </div>
       </div>
+    </t-popup>
+
+    <!-- 行程时间选择 -->
+    <t-popup v-model="showTime" placement="bottom">
+      <t-date-time-picker
+        v-if="showTime"
+        :value="timeVal"
+        mode="minute"
+        format="YYYY-MM-DD HH:mm"
+        title="选择时间"
+        confirm-btn="确定"
+        cancel-btn="取消"
+        @confirm="confirmTime"
+        @cancel="showTime = false"
+      />
+    </t-popup>
+
+    <!-- 交通方式选择 -->
+    <t-popup v-model="showTransport" placement="bottom">
+      <t-picker
+        v-if="showTransport"
+        :value="transportVal"
+        :columns="transportColumns"
+        title="交通方式"
+        confirm-btn="确定"
+        cancel-btn="取消"
+        @confirm="confirmTransport"
+        @cancel="showTransport = false"
+      />
     </t-popup>
 
     <t-action-sheet
@@ -280,17 +317,37 @@ function cycleStatus() {
   Toast({ message: '状态已更新为「' + statusText.value + '」' })
 }
 
-// 行程按天分组
-const itineraryByDay = computed(() => {
-  const map = {}
-  ;[...travel.value.itinerary]
-    .sort((a, b) => (a.day - b.day) || String(a.time).localeCompare(b.time))
-    .forEach((it) => {
-      const d = it.day || 1
-      ;(map[d] = map[d] || []).push(it)
-    })
-  return map
+// 行程按时间排序（固定时间点）
+const flatItinerary = computed(() => {
+  const list = [...(travel.value?.itinerary || [])]
+  list.sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+  return list
 })
+const isDateStr = (s) => typeof s === 'string' && /\d{4}-\d{2}-\d{2}/.test(s)
+function sortKey(it) {
+  if (isDateStr(it.time)) return it.time
+  return String(it.day || 1).padStart(3, '0') + (it.time || '0000')
+}
+function diffDays(a, b) {
+  const da = new Date(a + 'T00:00:00')
+  const db = new Date(b + 'T00:00:00')
+  return Math.floor((db - da) / 86400000)
+}
+function dayOf(it) {
+  if (isDateStr(it.time) && travel.value?.startDate) {
+    const d = diffDays(travel.value.startDate, it.time.slice(0, 10))
+    return d >= 0 ? d + 1 : 1
+  }
+  return it.day || 1
+}
+function dayDate(it) {
+  if (isDateStr(it.time)) return it.time.slice(0, 10)
+  return ''
+}
+function displayTime(it) {
+  if (isDateStr(it.time)) return it.time.slice(11, 16)
+  return it.time || ''
+}
 function toggleItinerary(it) {
   store.updateItem(travel.value.id, 'itinerary', it.id, { done: !it.done })
 }
@@ -352,6 +409,52 @@ function del(key, id) {
 // 添加弹窗
 const showAdd = ref(false)
 const af = reactive({})
+
+// 行程时间 / 交通方式
+const transportModes = ['步行', '打车', '滴滴', '地铁公交', '公交', '骑行', '自驾', '高铁', '飞机', '其他']
+const publicTransitModes = ['地铁公交', '公交']
+const transportColumns = [transportModes]
+const transportEmoji = {
+  步行: '🚶', 打车: '🚕', 滴滴: '🚗', 地铁公交: '🚇', 公交: '🚌',
+  骑行: '🚲', 自驾: '🚗', 高铁: '🚄', 飞机: '✈️', 其他: '📍',
+}
+const tpEmoji = (m) => transportEmoji[m] || '📍'
+
+function todayStr() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+const showTime = ref(false)
+const timeVal = ref('')
+function openTime() {
+  timeVal.value = af.time || (travel.value?.startDate || todayStr()) + ' 09:00'
+  showTime.value = true
+}
+function isDateObj(x) {
+  return x instanceof Date || (x && typeof x === 'object' && typeof x.getMonth === 'function')
+}
+function fmtDateTime(d) {
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+function confirmTime(v) {
+  const val = v?.value ?? v
+  af.time = isDateObj(val) ? fmtDateTime(val) : String(val)
+  showTime.value = false
+}
+
+const showTransport = ref(false)
+const transportVal = ref([])
+function confirmTransport(val) {
+  const arr = Array.isArray(val) ? val : [val]
+  const m = arr[0] || ''
+  af.transportMode = m || ''
+  transportVal.value = m ? [m] : []
+  showTransport.value = false
+}
+const isPublicTransit = computed(() => publicTransitModes.includes(af.transportMode))
 const addTitle = computed(
   () => ({ itinerary: '添加行程', luggage: '添加行李', todos: '添加待办', budgets: '添加记账' }[tab.value] || '添加')
 )
@@ -361,14 +464,20 @@ function openAdd() {
     return
   }
   Object.keys(af).forEach((k) => delete af[k])
-  if (tab.value === 'itinerary') Object.assign(af, { day: 1, time: '09:00' })
+  if (tab.value === 'itinerary') Object.assign(af, { time: '', transportMode: '', transportRoute: '' })
   showAdd.value = true
 }
 function submitAdd() {
   const id = travel.value.id
   if (tab.value === 'itinerary') {
     if (!af.title) return Toast({ message: '请输入活动', theme: 'warning' })
-    store.addItem(id, 'itinerary', { title: af.title, day: Number(af.day) || 1, time: af.time || '', note: af.note || '', done: false })
+    store.addItem(id, 'itinerary', {
+      title: af.title,
+      time: af.time || '',
+      note: af.note || '',
+      done: false,
+      transport: af.transportMode ? { mode: af.transportMode, route: af.transportRoute || '' } : null,
+    })
   } else if (tab.value === 'luggage') {
     if (!af.name) return Toast({ message: '请输入物品', theme: 'warning' })
     store.addItem(id, 'luggage', { name: af.name, category: af.category || '其他', packed: false })
@@ -585,6 +694,35 @@ function editBudgetTotal() {
   font-size: 12px;
   color: var(--text-2);
 }
+/* 行程之间的交通连接段 */
+.it-wrap {
+  margin-bottom: 2px;
+}
+.tl-connector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 6px 22px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.tp-emoji {
+  font-size: 15px;
+  line-height: 1;
+}
+.tp-mode {
+  font-weight: 600;
+  color: var(--brand);
+}
+.tp-route {
+  color: var(--text-2);
+}
+.day-date {
+  color: var(--text-3);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 4px;
+}
 .progress-card,
 .budget-summary {
   background: #fff;
@@ -619,7 +757,7 @@ function editBudgetTotal() {
 /* 相册 */
 .album-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 8px;
 }
 .album-add {

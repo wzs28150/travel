@@ -113,13 +113,19 @@ import AppTabBar from '../components/AppTabBar.vue'
 const store = useTravelStore()
 const router = useRouter()
 
+function todayStr() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
 const filter = ref('all')
 const filtered = computed(() =>
   filter.value === 'all' ? store.travels : store.travels.filter((t) => t.status === filter.value)
 )
 
 const showCreate = ref(false)
-const form = reactive({ title: '', regionCode: '', regionText: '', cityName: '', startDate: '', endDate: '', budgetTotal: '' })
+const form = reactive({ title: '', regionCode: '', regionText: '', cityName: '', startDate: todayStr(), endDate: todayStr(), budgetTotal: '' })
 const showRegion = ref(false)
 // t-cascader 是单选值(value=叶子code)，整条路径通过 @change(value, selectedOptions) 拿到
 function onRegionChange(value, selectedOptions) {
@@ -136,7 +142,7 @@ const dateVal = ref('')
 const dateField = ref('start')
 function openDate(field) {
   dateField.value = field
-  dateVal.value = field === 'start' ? form.startDate : form.endDate
+  dateVal.value = form[field] || todayStr()
   showDate.value = true
 }
 function confirmDate(v) {

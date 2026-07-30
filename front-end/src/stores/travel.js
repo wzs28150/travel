@@ -6,6 +6,22 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 }
 
+// 根据开始/结束日期自动推断状态：过去的行程算历史(已完成)，未来的算计划中
+function deriveStatus(start, end) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const s = start ? new Date(start + 'T00:00:00') : null
+  const e = end ? new Date(end + 'T00:00:00') : null
+  if (s && !isNaN(s) && e && !isNaN(e)) {
+    if (e < today) return 'done' // 已结束 → 历史行程/手账
+    if (s > today) return 'planning' // 未开始 → 计划中
+    return 'ongoing' // 进行中
+  }
+  if (s && !isNaN(s)) return s < today ? 'done' : 'planning'
+  if (e && !isNaN(e)) return e < today ? 'done' : 'planning'
+  return 'planning'
+}
+
 export const useTravelStore = defineStore('travel', {
   state: () => ({
     travels: [],
@@ -50,7 +66,7 @@ export const useTravelStore = defineStore('travel', {
         region,
         startDate: data.startDate || '',
         endDate: data.endDate || '',
-        status: 'planning',
+        status: data.status || deriveStatus(data.startDate, data.endDate),
         cover: data.cover || '',
         budgetTotal: data.budgetTotal || 0,
         cities,

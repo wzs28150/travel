@@ -40,7 +40,7 @@ function onChange(val) {
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 480px;
+  max-width: 100%;
   z-index: 200;
 }
 :deep(.t-tab-bar) {
