@@ -124,13 +124,20 @@ export const useTravelStore = defineStore('travel', {
       const t = this.getTravel(travelId)
       if (!t) return
       if (!t.photos) t.photos = []
-      t.photos.unshift(photo) // { url, size, name }
+      t.photos.unshift(photo) // { url, size, name, tag }
       this.syncTravel(travelId)
     },
     removePhoto(travelId, index) {
       const t = this.getTravel(travelId)
       if (t?.photos) {
         t.photos.splice(index, 1)
+        this.syncTravel(travelId)
+      }
+    },
+    updatePhotoTag(travelId, index, tag) {
+      const t = this.getTravel(travelId)
+      if (t?.photos && t.photos[index]) {
+        t.photos[index].tag = tag
         this.syncTravel(travelId)
       }
     },

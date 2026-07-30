@@ -159,14 +159,15 @@
         <!-- 相册 -->
         <div v-show="tab === 'photos'">
           <div class="album-grid">
-            <label class="album-add">
+            <div class="album-add" @click="openUpload">
               <t-icon name="camera" size="26px" color="#ff7a45" />
               <span>添加</span>
-              <input type="file" accept="image/*" multiple hidden @change="onUpload" />
-            </label>
+            </div>
             <div v-for="(p, i) in travel.photos" :key="i" class="album-item" @click="previewPhoto(i)">
               <img :src="p.url || p" />
+              <t-icon name="edit" class="album-edit" @click.stop="openTagEdit(i)" />
               <t-icon name="close-circle-filled" class="album-del" @click.stop="delPhoto(i)" />
+              <span v-if="p.tag" class="album-tag">{{ p.tag }}</span>
             </div>
           </div>
           <div v-if="!travel.photos.length" class="album-tip">记录旅途中的美好瞬间 📷</div>
@@ -245,6 +246,36 @@
       :items="[{ label: '编辑总预算' }, { label: '删除旅行', color: '#ff4d4f' }]"
       @selected="onMenu"
     />
+
+    <!-- 上传照片 + 标签 -->
+    <t-popup v-model="showUpload" placement="bottom">
+      <div class="sheet">
+        <div class="sheet-title">添加照片</div>
+        <div class="upload-drop" @click="pickFiles">
+          <t-icon name="image" size="28px" color="#ff7a45" />
+          <div>点击选择照片（可多选）</div>
+          <div v-if="pendingFiles.length" class="upload-count">已选 {{ pendingFiles.length }} 张</div>
+          <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="onSelect" />
+        </div>
+        <t-input v-model="uploadTag" label="拍摄地点/标签" placeholder="选填，如：外滩、酒店大堂" />
+        <div class="sheet-actions">
+          <t-button theme="light" block @click="showUpload = false">取消</t-button>
+          <t-button theme="primary" block :loading="uploading" @click="confirmUpload">上传</t-button>
+        </div>
+      </div>
+    </t-popup>
+
+    <!-- 编辑照片标签 -->
+    <t-popup v-model="showTagEdit" placement="bottom">
+      <div class="sheet">
+        <div class="sheet-title">照片标签</div>
+        <t-input v-model="editTag" label="拍摄地点/标签" placeholder="如：外滩、酒店大堂" />
+        <div class="sheet-actions">
+          <t-button theme="light" block @click="showTagEdit = false">取消</t-button>
+          <t-button theme="primary" block @click="confirmTagEdit">保存</t-button>
+        </div>
+      </div>
+    </t-popup>
 
     <t-image-viewer v-model:visible="showViewer" :images="(travel?.photos || []).map((p) => p.url || p)" :default-index="viewerIndex" />
   </div>
@@ -375,21 +406,58 @@ const budgetPercent = computed(() =>
 
 // 相册
 const uploading = ref(false)
-async function onUpload(e) {
-  const files = Array.from(e.target.files || [])
-  if (!files.length) return
+const showUpload = ref(false)
+const fileInput = ref(null)
+const pendingFiles = ref([])
+const uploadTag = ref('')
+const showTagEdit = ref(false)
+const editTagIndex = ref(-1)
+const editTag = ref('')
+
+function openUpload() {
+  pendingFiles.value = []
+  uploadTag.value = ''
+  showUpload.value = true
+}
+function pickFiles() {
+  fileInput.value && fileInput.value.click()
+}
+function onSelect(e) {
+  pendingFiles.value = Array.from(e.target.files || [])
+  e.target.value = ''
+}
+async function confirmUpload() {
+  if (!pendingFiles.value.length) return Toast({ message: '请先选择照片', theme: 'warning' })
   uploading.value = true
   try {
-    for (const f of files) {
+    for (const f of pendingFiles.value) {
       const data = await uploadFile(f)
-      store.addPhoto(travel.value.id, { url: data.url, size: data.size, name: data.name })
+      store.addPhoto(travel.value.id, {
+        url: data.url,
+        size: data.size,
+        name: data.name,
+        tag: uploadTag.value.trim(),
+      })
     }
+    Toast({ message: '已添加', theme: 'success' })
+    showUpload.value = false
   } catch (err) {
     Toast({ message: err.message || '上传失败', theme: 'error' })
   } finally {
     uploading.value = false
-    e.target.value = ''
+    pendingFiles.value = []
   }
+}
+function openTagEdit(i) {
+  editTagIndex.value = i
+  editTag.value = (travel.value.photos[i] && travel.value.photos[i].tag) || ''
+  showTagEdit.value = true
+}
+function confirmTagEdit() {
+  if (editTagIndex.value >= 0) {
+    store.updatePhotoTag(travel.value.id, editTagIndex.value, editTag.value.trim())
+  }
+  showTagEdit.value = false
 }
 const showViewer = ref(false)
 const viewerIndex = ref(0)
@@ -794,6 +862,43 @@ function editBudgetTotal() {
   right: 4px;
   color: rgba(0, 0, 0, 0.5);
   font-size: 20px;
+}
+.album-edit {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  color: #fff;
+  font-size: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  padding: 3px;
+}
+.album-tag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upload-drop {
+  border: 1px dashed #ffb38a;
+  border-radius: 12px;
+  padding: 22px 12px;
+  text-align: center;
+  color: var(--text-2);
+  background: var(--brand-light);
+  margin-bottom: 14px;
+}
+.upload-count {
+  margin-top: 8px;
+  color: var(--brand);
+  font-weight: 600;
 }
 .album-tip {
   text-align: center;
