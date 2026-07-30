@@ -164,10 +164,10 @@
               <span>添加</span>
             </div>
             <div v-for="(p, i) in travel.photos" :key="i" class="album-item" @click="previewPhoto(i)">
-              <img :src="p.url || p" />
-              <t-icon name="edit" class="album-edit" @click.stop="openTagEdit(i)" />
+              <img :src="p.thumb || p.url || p" loading="lazy" />
+              <t-icon name="edit" class="album-edit" @click.stop="openPhotoSetting(i)" />
               <t-icon name="close-circle-filled" class="album-del" @click.stop="delPhoto(i)" />
-              <span v-if="p.tag" class="album-tag">{{ p.tag }}</span>
+              <span v-if="p.tag || p.place" class="album-tag">{{ p.tag || p.place }}</span>
             </div>
           </div>
           <div v-if="!travel.photos.length" class="album-tip">记录旅途中的美好瞬间 📷</div>
@@ -247,7 +247,7 @@
       @selected="onMenu"
     />
 
-    <!-- 上传照片 + 标签 -->
+    <!-- 上传照片 + 标签/拍摄地 -->
     <t-popup v-model="showUpload" placement="bottom">
       <div class="sheet">
         <div class="sheet-title">添加照片</div>
@@ -257,7 +257,16 @@
           <div v-if="pendingFiles.length" class="upload-count">已选 {{ pendingFiles.length }} 张</div>
           <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="onSelect" />
         </div>
-        <t-input v-model="uploadTag" label="拍摄地点/标签" placeholder="选填，如：外滩、酒店大堂" />
+        <t-input v-model="uploadTag" label="标签" placeholder="选填，如：美食、夜景" />
+        <div v-if="existingTags.length" class="quick-row">
+          <span class="quick-lbl">已有标签</span>
+          <span v-for="tg in existingTags" :key="tg" class="quick-chip" @click="uploadTag = tg">{{ tg }}</span>
+        </div>
+        <t-input v-model="uploadPlace" label="拍摄地" placeholder="选填，如：外滩、酒店大堂" />
+        <div v-if="existingPlaces.length" class="quick-row">
+          <span class="quick-lbl">已有地点</span>
+          <span v-for="pl in existingPlaces" :key="pl" class="quick-chip" @click="uploadPlace = pl">{{ pl }}</span>
+        </div>
         <div class="sheet-actions">
           <t-button theme="light" block @click="showUpload = false">取消</t-button>
           <t-button theme="primary" block :loading="uploading" @click="confirmUpload">上传</t-button>
@@ -265,19 +274,38 @@
       </div>
     </t-popup>
 
-    <!-- 编辑照片标签 -->
-    <t-popup v-model="showTagEdit" placement="bottom">
+    <!-- 照片设置：封面 / 标签 / 拍摄地 -->
+    <t-popup v-model="showPhotoSetting" placement="bottom">
       <div class="sheet">
-        <div class="sheet-title">照片标签</div>
-        <t-input v-model="editTag" label="拍摄地点/标签" placeholder="如：外滩、酒店大堂" />
+        <div class="sheet-title">照片设置</div>
+        <t-button theme="light" block class="set-cover-btn" @click="setAsCover">
+          <t-icon name="image" size="16px" /> 设为清单封面
+        </t-button>
+        <t-input v-model="editTag" label="标签" placeholder="选填，如：美食、夜景" />
+        <div v-if="existingTags.length" class="quick-row">
+          <span class="quick-lbl">已有标签</span>
+          <span v-for="tg in existingTags" :key="tg" class="quick-chip" @click="editTag = tg">{{ tg }}</span>
+        </div>
+        <t-input v-model="editPlace" label="拍摄地" placeholder="选填，如：外滩、酒店大堂" />
+        <div v-if="existingPlaces.length" class="quick-row">
+          <span class="quick-lbl">已有地点</span>
+          <span v-for="pl in existingPlaces" :key="pl" class="quick-chip" @click="editPlace = pl">{{ pl }}</span>
+        </div>
         <div class="sheet-actions">
-          <t-button theme="light" block @click="showTagEdit = false">取消</t-button>
-          <t-button theme="primary" block @click="confirmTagEdit">保存</t-button>
+          <t-button theme="light" block @click="showPhotoSetting = false">取消</t-button>
+          <t-button theme="primary" block @click="confirmPhotoSetting">保存</t-button>
         </div>
       </div>
     </t-popup>
 
-    <t-image-viewer v-model:visible="showViewer" :images="(travel?.photos || []).map((p) => p.url || p)" :default-index="viewerIndex" />
+    <t-image-viewer
+      v-model:visible="showViewer"
+      :images="(travel?.photos || []).map((p) => p.url || p)"
+      :default-index="viewerIndex"
+      :show-index="true"
+      :max-zoom="3"
+      :loop="true"
+    />
   </div>
 </template>
 
@@ -410,13 +438,32 @@ const showUpload = ref(false)
 const fileInput = ref(null)
 const pendingFiles = ref([])
 const uploadTag = ref('')
-const showTagEdit = ref(false)
-const editTagIndex = ref(-1)
+const uploadPlace = ref('')
+const showPhotoSetting = ref(false)
+const editIndex = ref(-1)
 const editTag = ref('')
+const editPlace = ref('')
+
+// 当前清单已用过的标签/拍摄地（用于快速选择，避免重复输入）
+const existingTags = computed(() => {
+  const set = new Set()
+  ;(travel.value?.photos || []).forEach((p, i) => {
+    if (i !== editIndex.value && p.tag) set.add(p.tag)
+  })
+  return [...set]
+})
+const existingPlaces = computed(() => {
+  const set = new Set()
+  ;(travel.value?.photos || []).forEach((p, i) => {
+    if (i !== editIndex.value && p.place) set.add(p.place)
+  })
+  return [...set]
+})
 
 function openUpload() {
   pendingFiles.value = []
   uploadTag.value = ''
+  uploadPlace.value = ''
   showUpload.value = true
 }
 function pickFiles() {
@@ -434,9 +481,11 @@ async function confirmUpload() {
       const data = await uploadFile(f)
       store.addPhoto(travel.value.id, {
         url: data.url,
+        thumb: data.thumb,
         size: data.size,
         name: data.name,
         tag: uploadTag.value.trim(),
+        place: uploadPlace.value.trim(),
       })
     }
     Toast({ message: '已添加', theme: 'success' })
@@ -448,16 +497,29 @@ async function confirmUpload() {
     pendingFiles.value = []
   }
 }
-function openTagEdit(i) {
-  editTagIndex.value = i
-  editTag.value = (travel.value.photos[i] && travel.value.photos[i].tag) || ''
-  showTagEdit.value = true
+function openPhotoSetting(i) {
+  editIndex.value = i
+  const p = travel.value.photos[i] || {}
+  editTag.value = p.tag || ''
+  editPlace.value = p.place || ''
+  showPhotoSetting.value = true
 }
-function confirmTagEdit() {
-  if (editTagIndex.value >= 0) {
-    store.updatePhotoTag(travel.value.id, editTagIndex.value, editTag.value.trim())
+function confirmPhotoSetting() {
+  if (editIndex.value >= 0) {
+    store.updatePhotoMeta(travel.value.id, editIndex.value, {
+      tag: editTag.value.trim(),
+      place: editPlace.value.trim(),
+    })
   }
-  showTagEdit.value = false
+  showPhotoSetting.value = false
+}
+function setAsCover() {
+  const p = travel.value.photos[editIndex.value]
+  if (p) {
+    store.setCover(travel.value.id, p.thumb || p.url)
+    Toast({ message: '已设为封面', theme: 'success' })
+  }
+  showPhotoSetting.value = false
 }
 const showViewer = ref(false)
 const viewerIndex = ref(0)
@@ -829,8 +891,8 @@ function editBudgetTotal() {
 /* 相册 */
 .album-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 7px;
 }
 .album-add {
   aspect-ratio: 1;
@@ -905,6 +967,30 @@ function editBudgetTotal() {
   color: var(--text-3);
   padding: 30px;
   font-size: 13px;
+}
+/* 已有标签/地点 快速选择 */
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.quick-lbl {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-right: 2px;
+}
+.quick-chip {
+  font-size: 12px;
+  color: var(--brand);
+  background: var(--brand-light);
+  border: 1px solid #ffd9c2;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.set-cover-btn {
+  margin-bottom: 14px;
 }
 .sheet {
   padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px);

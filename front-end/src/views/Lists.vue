@@ -27,6 +27,17 @@
         <t-tab-panel value="done" label="已完成" />
       </t-tabs>
 
+      <div v-if="allTags.length" class="tag-filter">
+        <span class="tf-chip" :class="{ active: tagFilter === '' }" @click="tagFilter = ''">全部标签</span>
+        <span
+          v-for="tg in allTags"
+          :key="tg"
+          class="tf-chip"
+          :class="{ active: tagFilter === tg }"
+          @click="tagFilter = tagFilter === tg ? '' : tg"
+        >{{ tg }}</span>
+      </div>
+
       <div v-if="filtered.length === 0" class="empty">
         <t-icon name="add-rectangle" size="48px" style="color:#ddd" />
         <p>还没有旅行计划，点击右下角 + 创建吧</p>
@@ -120,9 +131,19 @@ function todayStr() {
 }
 
 const filter = ref('all')
-const filtered = computed(() =>
-  filter.value === 'all' ? store.travels : store.travels.filter((t) => t.status === filter.value)
-)
+const tagFilter = ref('')
+// 全部旅行照片中出现过的标签（去重）
+const allTags = computed(() => {
+  const set = new Set()
+  store.travels.forEach((t) => (t.photos || []).forEach((p) => p.tag && set.add(p.tag)))
+  return [...set]
+})
+const filtered = computed(() => {
+  let list = store.travels
+  if (filter.value !== 'all') list = list.filter((t) => t.status === filter.value)
+  if (tagFilter.value) list = list.filter((t) => (t.photos || []).some((p) => p.tag === tagFilter.value))
+  return list
+})
 
 const showCreate = ref(false)
 const form = reactive({ title: '', regionCode: '', regionText: '', cityName: '', startDate: todayStr(), endDate: todayStr(), budgetTotal: '' })
@@ -216,6 +237,28 @@ const todoCount = (t) => `${t.todos?.filter((x) => x.done).length || 0}/${t.todo
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
+}
+.tag-filter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.tf-chip {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--text-2);
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+.tf-chip.active {
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
 }
 .travel-card {
   background: #fff;

@@ -124,20 +124,43 @@ export const useTravelStore = defineStore('travel', {
       const t = this.getTravel(travelId)
       if (!t) return
       if (!t.photos) t.photos = []
-      t.photos.unshift(photo) // { url, size, name, tag }
+      const item = {
+        url: photo.url,
+        thumb: photo.thumb || photo.url, // 缩略图（列表/相册用，省流量）
+        size: photo.size,
+        name: photo.name,
+        tag: photo.tag || '', // 标签
+        place: photo.place || '', // 拍摄地
+      }
+      t.photos.unshift(item)
+      // 首张照片自动作为清单封面（小而清晰）
+      if (!t.cover && item.thumb) t.cover = item.thumb
       this.syncTravel(travelId)
     },
     removePhoto(travelId, index) {
       const t = this.getTravel(travelId)
-      if (t?.photos) {
-        t.photos.splice(index, 1)
+      if (!t?.photos) return
+      const removed = t.photos[index]
+      t.photos.splice(index, 1)
+      // 若删掉的是当前封面，回退到剩余首图的缩略图
+      if (removed && t.cover && (removed.thumb === t.cover || removed.url === t.cover)) {
+        t.cover = t.photos[0]?.thumb || t.photos[0]?.url || ''
+      }
+      this.syncTravel(travelId)
+    },
+    updatePhotoMeta(travelId, index, meta) {
+      const t = this.getTravel(travelId)
+      const p = t?.photos?.[index]
+      if (p) {
+        if ('tag' in meta) p.tag = meta.tag
+        if ('place' in meta) p.place = meta.place
         this.syncTravel(travelId)
       }
     },
-    updatePhotoTag(travelId, index, tag) {
+    setCover(travelId, url) {
       const t = this.getTravel(travelId)
-      if (t?.photos && t.photos[index]) {
-        t.photos[index].tag = tag
+      if (t) {
+        t.cover = url
         this.syncTravel(travelId)
       }
     },
