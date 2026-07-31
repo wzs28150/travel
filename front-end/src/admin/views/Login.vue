@@ -21,7 +21,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, setToken, clearToken } from '../../api/http.js'
+import { api, setToken } from '../../api/http.js'
 
 const router = useRouter()
 const username = ref('')
@@ -37,16 +37,12 @@ async function onLogin() {
   }
   loading.value = true
   try {
-    const res = await api.post('/auth/login', {
+    // 管理端独立登录接口：仅管理员可拿到 token，非管理员返回 401
+    const res = await api.post('/auth/admin-login', {
       username: username.value,
       password: password.value,
     })
-    const { token, user } = res.data
-    if (!user?.is_admin) {
-      clearToken()
-      error.value = '该账号无管理员权限'
-      return
-    }
+    const { token } = res.data
     setToken(token)
     router.replace('/users')
   } catch (e) {

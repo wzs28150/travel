@@ -75,6 +75,28 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// 管理后台独立登录：仅 is_admin=1 的账号可登录，非管理员不签发 token
+// 与客户端 /login 完全隔离，便于后续管理端独立部署 / 对接 App 客户端
+router.post('/admin-login', async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      return res.status(400).json({ code: 400, message: '请输入账号和密码' });
+    }
+    const [rows] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
+    const user = rows[0];
+    // 账号不存在 / 密码错误 / 非管理员 统一返回 401，不泄露账号是否存在
+    if (!user || !user.is_admin || !bcrypt.compareSync(String(password), user.password)) {
+      return res.status(401).json({ code: 401, message: '账号或密码错误，或无管理员权限' });
+    }
+    const token = signToken(user);
+    res.json({ code: 0, message: '登录成功', data: { token, user: publicUser(user) } });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '服务器错误' });
+  }
+});
+
 // 获取当前用户信息
 router.get('/me', auth, async (req, res) => {
   try {
