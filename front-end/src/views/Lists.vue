@@ -183,7 +183,8 @@ function openTravel(id) {
 }
 
 function coverStyle(t) {
-  if (t.cover) return { backgroundImage: `url(${t.cover})` }
+  const cover = t.cover || t.photos?.[0]?.url
+  if (cover) return { backgroundImage: `url(${cover})` }
   const colors = ['#ffd8a8', '#a5d8ff', '#b2f2bb', '#ffc9c9', '#d0bfff']
   const c = colors[t.title.length % colors.length]
   return { background: `linear-gradient(135deg, ${c}, #fff)` }

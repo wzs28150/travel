@@ -218,10 +218,11 @@ export async function seedSampleTravels(userId) {
       todos: (s.todos || []).map((it) => ({ id: uid(), ...it })),
       budgets: [],
     };
+    const coverUrl = s.photos && s.photos[0] ? s.photos[0].url : '';
     await db.query(
       `INSERT INTO travels (user_id, title, destination, start_date, end_date, status, cover, is_sample, content)
-       VALUES (?, ?, ?, ${startDate}, ${endDate}, ?, '', 1, ?)`,
-      [userId, s.title, s.destination, s.status, JSON.stringify(content)]
+       VALUES (?, ?, ?, ${startDate}, ${endDate}, ?, ?, 1, ?)`,
+      [userId, s.title, s.destination, s.status, coverUrl, JSON.stringify(content)]
     );
   }
 }
