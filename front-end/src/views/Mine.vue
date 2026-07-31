@@ -52,6 +52,9 @@
       </div>
 
       <t-cell-group theme="card" class="mine-group">
+        <t-cell v-if="auth.isAdmin" title="用户管理" note="管理后台" arrow @click="openAdmin">
+          <template #leftIcon><t-icon name="usergroup" size="20px" color="#7c5cff" /></template>
+        </t-cell>
         <t-cell title="编辑个人信息" arrow @click="goEdit">
           <template #leftIcon><t-icon name="user-1" size="20px" color="#ff7a45" /></template>
         </t-cell>
@@ -124,6 +127,9 @@ onMounted(loadStorage)
 
 function goEdit() {
   router.push('/profile-edit')
+}
+function openAdmin() {
+  window.location.href = '/admin.html'
 }
 async function expand() {
   expanding.value = true

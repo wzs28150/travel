@@ -6,4 +6,10 @@ export const config = {
   jwtExpires: process.env.JWT_EXPIRES || '7d',
   uploadDir: process.env.UPLOAD_DIR || 'uploads',
   storageLimit: Number(process.env.STORAGE_LIMIT || 2147483648),
+  // 首个管理员引导：服务器/容器首次启动时，若库中尚无管理员且配置了以下变量，则自动创建
+  adminBootstrap: {
+    username: process.env.ADMIN_USERNAME || '',
+    password: process.env.ADMIN_PASSWORD || '',
+    nickname: process.env.ADMIN_NICKNAME || '管理员',
+  },
 };

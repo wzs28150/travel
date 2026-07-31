@@ -52,6 +52,27 @@ export const api = {
   del: (p) => request(p, { method: 'DELETE' }),
 }
 
+// 管理后台接口（需管理员 token）
+export const adminApi = {
+  list(params = {}) {
+    const q = new URLSearchParams();
+    if (params.page) q.set('page', params.page);
+    if (params.pageSize) q.set('pageSize', params.pageSize);
+    if (params.keyword) q.set('keyword', params.keyword);
+    const qs = q.toString();
+    return api.get('/admin/users' + (qs ? '?' + qs : ''));
+  },
+  create(body) {
+    return api.post('/admin/users', body);
+  },
+  update(id, body) {
+    return api.put('/admin/users/' + id, body);
+  },
+  remove(id) {
+    return api.del('/admin/users/' + id);
+  },
+};
+
 // 图片上传（multipart）
 export async function uploadFile(file) {
   const fd = new FormData()

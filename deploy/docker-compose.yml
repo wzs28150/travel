@@ -44,6 +44,11 @@ services:
       JWT_EXPIRES: 7d
       UPLOAD_DIR: uploads
       STORAGE_LIMIT: 2147483648
+      # 首个管理员引导（仅当库中尚无管理员时生效）。请通过宿主环境变量注入，例如：
+      #   ADMIN_USERNAME=admin ADMIN_PASSWORD='****' docker compose up -d
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NICKNAME: ${ADMIN_NICKNAME:-管理员}
     volumes:
       - backend_uploads:/app/uploads
     expose:

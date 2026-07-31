@@ -8,7 +8,7 @@ import { seedSampleTravels } from './travels.js';
 
 const router = Router();
 
-const PUBLIC_FIELDS = ['id', 'username', 'nickname', 'avatar', 'signature', 'gender', 'city', 'created_at'];
+const PUBLIC_FIELDS = ['id', 'username', 'nickname', 'avatar', 'signature', 'gender', 'city', 'is_admin', 'created_at'];
 
 function publicUser(row) {
   const u = {};

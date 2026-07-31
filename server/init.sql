@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `signature`  VARCHAR(200) DEFAULT '' COMMENT '个性签名',
   `gender`     VARCHAR(10)  DEFAULT '' COMMENT '性别',
   `city`       VARCHAR(50)  DEFAULT '' COMMENT '所在城市',
+  `is_admin`   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否管理员（可进入管理后台）',
   `storage_limit` BIGINT UNSIGNED NOT NULL DEFAULT 2147483648 COMMENT '存储空间上限(字节)，默认 2GB',
   `created_at` DATETIME     DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

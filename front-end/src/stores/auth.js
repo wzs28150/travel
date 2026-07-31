@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isLogin: (s) => !!s.token,
+    isAdmin: (s) => !!s.user?.is_admin,
     nickname: (s) => s.user?.nickname || '旅行者',
   },
   actions: {

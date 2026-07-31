@@ -10,7 +10,7 @@ export default function auth(req, res, next) {
   }
   try {
     const payload = jwt.verify(token, config.jwtSecret);
-    req.user = { id: payload.uid, username: payload.username };
+    req.user = { id: payload.uid, username: payload.username, isAdmin: !!payload.is_admin };
     next();
   } catch (e) {
     return res.status(401).json({ code: 401, message: '登录已过期，请重新登录' });
@@ -18,7 +18,9 @@ export default function auth(req, res, next) {
 }
 
 export function signToken(user) {
-  return jwt.sign({ uid: user.id, username: user.username }, config.jwtSecret, {
-    expiresIn: config.jwtExpires,
-  });
+  return jwt.sign(
+    { uid: user.id, username: user.username, is_admin: !!user.is_admin },
+    config.jwtSecret,
+    { expiresIn: config.jwtExpires }
+  );
 }

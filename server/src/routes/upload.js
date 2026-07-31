@@ -5,6 +5,8 @@ import path from 'path';
 import sharp from 'sharp';
 import auth from '../middleware/auth.js';
 import { config } from '../config.js';
+import db from '../db.js';
+import { computeStorage } from '../utils/storage.js';
 
 const router = Router();
 
@@ -64,6 +66,21 @@ async function processImage(srcPath, isPng) {
 router.post('/', auth, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ code: 400, message: '未收到文件' });
+
+    // 强制空间上限：已用 + 本次上传原始大小 超过上限则拒绝（保守按原图大小估算）
+    const [rows] = await db.query('SELECT storage_limit FROM users WHERE id = ?', [req.user.id]);
+    const total = rows.length ? Number(rows[0].storage_limit) : config.storageLimit;
+    const used = await computeStorage(req.user.id);
+    if (used + req.file.size > total) {
+      fs.unlink(req.file.path, () => {});
+      const remain = Math.max(0, total - used);
+      const mb = (remain / 1024 / 1024).toFixed(0);
+      return res.status(403).json({
+        code: 403,
+        message: `存储空间不足，剩余约 ${mb} MB，无法上传该图片`,
+      });
+    }
+
     const isPng = req.file.mimetype === 'image/png';
     const { fullName, thumbName } = await processImage(req.file.path, isPng);
     const base = config.baseUrl || '';
