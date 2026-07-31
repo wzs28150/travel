@@ -73,7 +73,7 @@
               <div class="tl-content" @click="toggleItinerary(it)">
                 <div class="flex-between">
                   <span class="tl-time">{{ displayTime(it) }}</span>
-                  <t-icon name="delete" size="16px" color="#ccc" @click.stop="del('itinerary', it.id)" />
+                  <t-icon name="delete" size="16px" color="#ccc" @click="onIconClick($event, () => del('itinerary', it.id))" />
                 </div>
                 <div class="tl-title" :class="{ done: it.done }">{{ it.title }}</div>
                 <div v-if="it.note" class="tl-note">{{ it.note }}</div>
@@ -102,7 +102,7 @@
                 <t-tag size="small" variant="light" style="margin-left:6px">{{ it.category }}</t-tag>
               </template>
               <template #rightIcon>
-                <t-icon name="delete" color="#ccc" @click.stop="del('luggage', it.id)" />
+                <t-icon name="delete" color="#ccc" @click="onIconClick($event, () => del('luggage', it.id))" />
               </template>
             </t-cell>
           </t-cell-group>
@@ -116,7 +116,7 @@
               <template #leftIcon><t-checkbox :checked="it.done" /></template>
               <template #title><span :class="{ done: it.done }">{{ it.text }}</span></template>
               <template #rightIcon>
-                <t-icon name="delete" color="#ccc" @click.stop="del('todos', it.id)" />
+                <t-icon name="delete" color="#ccc" @click="onIconClick($event, () => del('todos', it.id))" />
               </template>
             </t-cell>
           </t-cell-group>
@@ -150,7 +150,7 @@
                 <span class="amount">-¥{{ it.amount }}</span>
               </template>
               <template #rightIcon>
-                <t-icon name="delete" color="#ccc" @click.stop="del('budgets', it.id)" />
+                <t-icon name="delete" color="#ccc" @click="onIconClick($event, () => del('budgets', it.id))" />
               </template>
             </t-cell>
           </t-cell-group>
@@ -532,6 +532,13 @@ function previewPhoto(i) {
 }
 function delPhoto(i) {
   store.removePhoto(travel.value.id, i)
+}
+
+// t-icon 的 @click 绑定到组件 onClick prop，回调首参可能不是原生事件，
+// 这里统一安全 stop，避免 "e.stopPropagation is not a function"
+function onIconClick(e, fn) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation()
+  fn()
 }
 
 // 通用删除
