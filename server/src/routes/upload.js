@@ -32,10 +32,11 @@ const upload = multer({
 // 压缩原图 + 生成缩略图，返回文件名
 async function processImage(srcPath, isPng) {
   const dir = path.dirname(srcPath);
-  const base = path.basename(srcPath, path.extname(srcPath));
+  // 输出必须用全新唯一名，绝不能复用 multer 临时文件名（sharp 不允许读写同文件）
+  const stem = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
   const ext = isPng ? '.png' : '.jpg';
-  const fullName = base + ext;
-  const thumbName = base + '.thumb' + ext;
+  const fullName = stem + ext;
+  const thumbName = stem + '.thumb' + ext;
   const fullPath = path.join(dir, fullName);
   const thumbPath = path.join(dir, thumbName);
 
