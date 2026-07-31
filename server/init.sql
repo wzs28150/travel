@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS `travels` (
   `end_date`   DATE         DEFAULT NULL COMMENT '结束日期',
   `status`     VARCHAR(20)  NOT NULL DEFAULT 'planning' COMMENT 'planning/ongoing/done',
   `cover`      VARCHAR(255) DEFAULT '' COMMENT '封面 URL',
+  `is_sample`  TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否示例数据（注册自动播种）',
   `content`    JSON         NULL COMMENT '行程/行李/待办/预算/相册等结构化数据',
   `created_at` DATETIME     DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

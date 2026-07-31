@@ -34,6 +34,9 @@
 
       <div v-for="t in filtered" :key="t.id" class="travel-card" @click="openTravel(t.id)">
         <div class="cover" :style="coverStyle(t)">
+          <t-tag v-if="t.isSample" theme="default" variant="light" size="small" class="sample-tag">
+            示例
+          </t-tag>
           <t-tag :theme="statusTheme(t.status)" variant="light" size="small" class="status-tag">
             {{ statusText(t.status) }}
           </t-tag>
@@ -234,6 +237,14 @@ const todoCount = (t) => `${t.todos?.filter((x) => x.done).length || 0}/${t.todo
   position: absolute;
   top: 10px;
   right: 10px;
+}
+.sample-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border-color: transparent;
 }
 .info {
   padding: 12px 14px 14px;

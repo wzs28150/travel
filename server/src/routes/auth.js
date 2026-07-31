@@ -4,6 +4,7 @@ import db from '../db.js';
 import auth, { signToken } from '../middleware/auth.js';
 import { config } from '../config.js';
 import { computeStorage } from '../utils/storage.js';
+import { seedSampleTravels } from './travels.js';
 
 const router = Router();
 
@@ -34,7 +35,14 @@ router.post('/register', async (req, res) => {
       'INSERT INTO users (username, password, nickname) VALUES (?, ?, ?)',
       [username, hash, nickname || username]
     );
-    const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+    const userId = result.insertId;
+    // 注册成功后给新用户播种示例旅行，降低空页面孤独感
+    try {
+      await seedSampleTravels(userId);
+    } catch (seedErr) {
+      console.error('示例数据播种失败（不影响注册）：', seedErr);
+    }
+    const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
     const user = rows[0];
     const token = signToken(user);
     res.json({ code: 0, message: '注册成功', data: { token, user: publicUser(user) } });
