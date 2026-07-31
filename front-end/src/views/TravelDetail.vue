@@ -158,19 +158,31 @@
 
         <!-- 相册 -->
         <div v-show="tab === 'photos'">
+          <!-- 按拍摄地筛选 -->
+          <div v-if="placeOptions.length" class="album-filter">
+            <span class="filter-chip" :class="{ active: !photoFilter }" @click="photoFilter = ''">全部</span>
+            <span
+              v-for="pl in placeOptions"
+              :key="pl"
+              class="filter-chip"
+              :class="{ active: photoFilter === pl }"
+              @click="photoFilter = pl"
+            >{{ pl }}</span>
+          </div>
           <div class="album-grid">
             <div class="album-add" @click="openUpload">
               <t-icon name="camera" size="26px" color="#ff7a45" />
               <span>添加</span>
             </div>
-            <div v-for="(p, i) in travel.photos" :key="i" class="album-item" @click="previewPhoto(i)">
-              <img :src="p.thumb || p.url || p" loading="lazy" />
-              <div class="album-edit" @click.stop="openPhotoSetting(i)"><t-icon name="edit" size="15px" /></div>
-              <div class="album-del" @click.stop="delPhoto(i)"><t-icon name="close-circle-filled" size="17px" /></div>
-              <span v-if="p.tag || p.place" class="album-tag">{{ [p.place, p.tag].filter(Boolean).join(' · ') }}</span>
+            <div v-for="fp in filteredPhotos" :key="fp.i" class="album-item" @click="previewPhoto(fp.i)">
+              <img :src="fp.p.thumb || fp.p.url || fp.p" loading="lazy" />
+              <div class="album-edit" @click.stop="openPhotoSetting(fp.i)"><t-icon name="edit" size="15px" /></div>
+              <div class="album-del" @click.stop="delPhoto(fp.i)"><t-icon name="close-circle-filled" size="17px" /></div>
+              <span v-if="fp.p.tag || fp.p.place" class="album-tag">{{ [fp.p.place, fp.p.tag].filter(Boolean).join(' · ') }}</span>
             </div>
           </div>
           <div v-if="!travel.photos.length" class="album-tip">记录旅途中的美好瞬间 📷</div>
+          <div v-else-if="!filteredPhotos.length" class="album-tip">该地点下还没有照片</div>
         </div>
       </div>
 
@@ -300,7 +312,7 @@
 
     <t-image-viewer
       v-model:visible="showViewer"
-      :images="(travel?.photos || []).map((p) => p.url || p)"
+      :images="filteredPhotos.map((fp) => fp.p.url || fp.p)"
       :default-index="viewerIndex"
       :show-index="true"
       :max-zoom="3"
@@ -432,6 +444,28 @@ const budgetPercent = computed(() =>
   travel.value.budgetTotal ? Math.round((totalSpent.value / travel.value.budgetTotal) * 100) : 0
 )
 
+// 相册：按拍摄地筛选
+const photoFilter = ref('')
+// 当前清单所有出现过的拍摄地（去重，用于筛选 chips）
+const placeOptions = computed(() => {
+  const set = new Set()
+  ;(travel.value?.photos || []).forEach((p) => {
+    if (p.place) set.add(p.place)
+  })
+  return [...set]
+})
+// 筛选后的照片（携带其在 travel.photos 中的真实索引，便于编辑/删除/预览）
+const filteredPhotos = computed(() => {
+  const list = travel.value?.photos || []
+  return list
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => !photoFilter.value || p.place === photoFilter.value)
+})
+// 若当前筛选的地点被改掉/删光，自动回到“全部”
+watch(placeOptions, (opts) => {
+  if (photoFilter.value && !opts.includes(photoFilter.value)) photoFilter.value = ''
+})
+
 // 相册
 const uploading = ref(false)
 const showUpload = ref(false)
@@ -527,7 +561,9 @@ function setAsCover() {
 const showViewer = ref(false)
 const viewerIndex = ref(0)
 function previewPhoto(i) {
-  viewerIndex.value = i
+  // i 为 travel.photos 中的真实索引，转换为筛选集合中的位置
+  const pos = filteredPhotos.value.findIndex((fp) => fp.i === i)
+  viewerIndex.value = pos >= 0 ? pos : 0
   showViewer.value = true
 }
 function delPhoto(i) {
@@ -899,6 +935,31 @@ function editBudgetTotal() {
   font-weight: 600;
 }
 /* 相册 */
+.album-filter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.album-filter:empty {
+  display: none;
+}
+.filter-chip {
+  flex: 0 0 auto;
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #f2f3f5;
+  color: var(--text-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.filter-chip.active {
+  background: var(--brand);
+  color: #fff;
+}
 .album-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
