@@ -137,6 +137,25 @@ export const useTravelStore = defineStore('travel', {
       if (!t.cover && item.thumb) t.cover = item.thumb
       this.syncTravel(travelId)
     },
+    // 批量添加多张照片，最后只同步一次（避免逐张 addPhoto 触发多次 PUT 竞态覆盖）
+    addPhotos(travelId, photos) {
+      const t = this.getTravel(travelId)
+      if (!t) return
+      if (!t.photos) t.photos = []
+      for (const photo of photos) {
+        const item = {
+          url: photo.url,
+          thumb: photo.thumb || photo.url,
+          size: photo.size,
+          name: photo.name,
+          tag: photo.tag || '',
+          place: photo.place || '',
+        }
+        t.photos.unshift(item)
+        if (!t.cover && item.thumb) t.cover = item.thumb
+      }
+      this.syncTravel(travelId)
+    },
     removePhoto(travelId, index) {
       const t = this.getTravel(travelId)
       if (!t?.photos) return

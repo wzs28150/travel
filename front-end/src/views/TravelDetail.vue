@@ -165,9 +165,9 @@
             </div>
             <div v-for="(p, i) in travel.photos" :key="i" class="album-item" @click="previewPhoto(i)">
               <img :src="p.thumb || p.url || p" loading="lazy" />
-              <t-icon name="edit" class="album-edit" @click.stop="openPhotoSetting(i)" />
-              <t-icon name="close-circle-filled" class="album-del" @click.stop="delPhoto(i)" />
-              <span v-if="p.tag || p.place" class="album-tag">{{ p.tag || p.place }}</span>
+              <div class="album-edit" @click.stop="openPhotoSetting(i)"><t-icon name="edit" size="15px" /></div>
+              <div class="album-del" @click.stop="delPhoto(i)"><t-icon name="close-circle-filled" size="17px" /></div>
+              <span v-if="p.tag || p.place" class="album-tag">{{ [p.place, p.tag].filter(Boolean).join(' · ') }}</span>
             </div>
           </div>
           <div v-if="!travel.photos.length" class="album-tip">记录旅途中的美好瞬间 📷</div>
@@ -477,9 +477,10 @@ async function confirmUpload() {
   if (!pendingFiles.value.length) return Toast({ message: '请先选择照片', theme: 'warning' })
   uploading.value = true
   try {
+    const saved = []
     for (const f of pendingFiles.value) {
       const data = await uploadFile(f)
-      store.addPhoto(travel.value.id, {
+      saved.push({
         url: data.url,
         thumb: data.thumb,
         size: data.size,
@@ -488,7 +489,9 @@ async function confirmUpload() {
         place: uploadPlace.value.trim(),
       })
     }
-    Toast({ message: '已添加', theme: 'success' })
+    // 全部上传完，一次性写入并同步（避免多张图片时多次 PUT 竞态导致只剩一张）
+    store.addPhotos(travel.value.id, saved)
+    Toast({ message: `已添加 ${saved.length} 张`, theme: 'success' })
     showUpload.value = false
   } catch (err) {
     Toast({ message: err.message || '上传失败', theme: 'error' })
@@ -917,23 +920,38 @@ function editBudgetTotal() {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  position: relative;
+  z-index: 1;
 }
 .album-del {
   position: absolute;
   top: 4px;
   right: 4px;
-  color: rgba(0, 0, 0, 0.5);
-  font-size: 20px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 50%;
+  padding: 2px;
+  cursor: pointer;
+  pointer-events: auto;
 }
 .album-edit {
   position: absolute;
   top: 4px;
   left: 4px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
-  font-size: 16px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 50%;
-  padding: 3px;
+  padding: 4px;
+  cursor: pointer;
+  pointer-events: auto;
 }
 .album-tag {
   position: absolute;
