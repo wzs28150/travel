@@ -155,11 +155,15 @@ router.put('/:id', async (req, res) => {
 // 删除用户（级联删除其旅行）
 router.delete('/:id', async (req, res) => {
   try {
-    if (Number(req.params.id) === Number(req.user.id)) {
-      return res.status(400).json({ code: 400, message: '不能删除当前登录的管理员账号' });
-    }
-    const [rows] = await db.query('SELECT id FROM users WHERE id = ?', [req.params.id]);
+    const [rows] = await db.query('SELECT id, is_admin FROM users WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ code: 404, message: '用户不存在' });
+    // 管理员账号不可删除，避免后台被清空导致无法登录
+    if (rows[0].is_admin) {
+      return res.status(400).json({ code: 400, message: '管理员账号不可删除' });
+    }
+    if (Number(req.params.id) === Number(req.user.id)) {
+      return res.status(400).json({ code: 400, message: '不能删除当前登录的账号' });
+    }
     await db.query('DELETE FROM users WHERE id = ?', [req.params.id]);
     res.json({ code: 0, message: '已删除' });
   } catch (e) {

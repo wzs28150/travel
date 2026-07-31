@@ -74,7 +74,12 @@
                 <td class="muted">{{ fmtDate(u.created_at) }}</td>
                 <td class="op">
                   <button class="link-btn" @click="openEdit(u)">编辑</button>
-                  <button class="link-btn danger" @click="remove(u)">删除</button>
+                  <button
+                    class="link-btn danger"
+                    :disabled="u.is_admin"
+                    :title="u.is_admin ? '管理员账号不可删除' : ''"
+                    @click="remove(u)"
+                  >删除</button>
                 </td>
               </tr>
               <tr v-if="!users.length">
@@ -457,6 +462,10 @@ onMounted(() => {
 }
 .link-btn.danger {
   color: #e54545;
+}
+.link-btn:disabled {
+  color: #b9bfc8;
+  cursor: default;
 }
 
 /* 表格 */
