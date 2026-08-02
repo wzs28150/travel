@@ -8,7 +8,9 @@ dist/
 .env
 
 # 本地项目状态（WorkBuddy 运行时数据，非源码）
-.workbuddy/
+# 仅同步 AI 记忆（memory/），其余本地文件不入库
+.workbuddy/*
+!.workbuddy/memory/
 
 # 操作系统 / 编辑器
 .DS_Store
