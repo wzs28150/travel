@@ -29,6 +29,42 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin/users', adminRoutes);
 app.use('/api/admin/storage-requests', storageRequestRoutes);
 
+// 启动自检：兼容老库升级（init.sql 仅在全新卷首次执行，已有库不会自动补列/建表）
+// 幂等：is_admin 列缺失则补，storage_requests 表缺失则建；出错仅告警不阻断启动。
+async function ensureSchema() {
+  try {
+    const [cols] = await db.query(
+      "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'is_admin'"
+    );
+    if (!cols.length) {
+      await db.query(
+        "ALTER TABLE users ADD COLUMN is_admin TINYINT NOT NULL DEFAULT 0 COMMENT '是否管理员(0否/1是)' AFTER storage_limit"
+      );
+      console.log('[schema] 已为 users 表补 is_admin 列');
+    }
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS \`storage_requests\` (
+        \`id\`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        \`user_id\`      INT UNSIGNED NOT NULL COMMENT '申请人',
+        \`requested_gb\` INT UNSIGNED NOT NULL COMMENT '申请增加的空间(GB)',
+        \`reason\`       VARCHAR(255) DEFAULT '' COMMENT '申请理由',
+        \`status\`       VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT 'pending/approved/rejected',
+        \`admin_id\`     INT UNSIGNED DEFAULT NULL COMMENT '处理人(管理员)',
+        \`admin_note\`   VARCHAR(255) DEFAULT '' COMMENT '处理备注',
+        \`created_at\`   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\`   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_user\` (\`user_id\`),
+        KEY \`idx_status\` (\`status\`),
+        CONSTRAINT \`fk_sr_user\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='存储扩容申请'
+    `);
+    console.log('[schema] storage_requests 表已就绪');
+  } catch (e) {
+    console.error('[schema] 自检失败（不影响启动，请检查数据库）：', e.message);
+  }
+}
+
 // 启动引导：若库中尚无管理员，且配置了 ADMIN_USERNAME/ADMIN_PASSWORD，则自动创建首个管理员
 async function bootstrapAdmin() {
   const { username, password, nickname } = config.adminBootstrap;
@@ -59,8 +95,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ code: 500, message: err.message || '服务器错误' });
 });
 
-app.listen(config.port, () => {
+app.listen(config.port, async () => {
   console.log(`[server] 旅迹后端已启动: http://localhost:${config.port}`);
   console.log(`[server] 上传目录: ${config.uploadDir}`);
+  await ensureSchema();
   bootstrapAdmin();
 });
