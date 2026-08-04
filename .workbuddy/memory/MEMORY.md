@@ -24,6 +24,7 @@
 
 ## 本机 Docker 镜像拉取（Docker Hub 不可达）
 - Docker Hub 在本机不可达（国内网络）。任何镜像都要先经 DaoCloud 镜像源 `docker.m.daocloud.io/library/<image>` 拉取再 `docker tag` 为官方名；`docker build` 加 `--pull=false`。
+- ⚠️ **沙箱 docker build 走死代理坑**：shell 的 `HTTP_PROXY/HTTPS_PROXY` 仍指向已死的 `127.0.0.1:11888`（`WORKBUDDY_PROXY_SOURCE=system` 注入），`docker compose build` 拉基础镜像时会走它报 `proxyconnect ... 127.0.0.1:11888 ... refused`。**构建前先清掉**：`env -u HTTP_PROXY -u HTTPS_PROXY docker compose build backend`（基础镜像本地已缓存，不联网也能建）。这与之前清的 git 全局代理是两套，别混淆。
   **root docker-compose.yml 还会拉 `mysql:8.0`**，同样需先 `docker pull docker.m.daocloud.io/library/mysql:8.0 && docker tag ... mysql:8.0` 再 `docker compose up -d`。（已验证可用镜像源仅 docker.m.daocloud.io；1panel/dockerproxy/nju 均超时。）
 - ⚠️ mysql 容器首次启动初始化数据库很慢（约 2 分钟），`docker compose up -d` 会在 mysql 未 healthy 时因 `depends_on: service_healthy` 直接失败退出、backend/frontend 卡在 Created。处理：等 mysql 真正 healthy（轮询 `docker inspect -f '{{.State.Health.Status}}' travel_mysql`）后再跑一次 `docker compose up -d` 即可拉起全部。
 
