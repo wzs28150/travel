@@ -58,22 +58,22 @@
         <t-cell title="编辑个人信息" arrow @click="goEdit">
           <template #leftIcon><t-icon name="user-1" size="20px" color="#ff7a45" /></template>
         </t-cell>
-        <t-cell title="我的收藏" note="即将上线" arrow>
+        <t-cell title="我的收藏" arrow @click="goFavorites">
           <template #leftIcon><t-icon name="star" size="20px" color="#ffb302" /></template>
         </t-cell>
-        <t-cell title="消息通知" arrow>
+        <t-cell title="消息通知" arrow @click="comingSoon('消息通知')">
           <template #leftIcon><t-icon name="notification" size="20px" color="#4d7cff" /></template>
         </t-cell>
-        <t-cell title="隐私设置" arrow>
+        <t-cell title="隐私设置" arrow @click="comingSoon('隐私设置')">
           <template #leftIcon><t-icon name="lock-on" size="20px" color="#52c41a" /></template>
         </t-cell>
       </t-cell-group>
 
       <t-cell-group theme="card" class="mine-group">
-        <t-cell title="帮助与反馈" arrow>
+        <t-cell title="帮助与反馈" arrow @click="showHelp = true">
           <template #leftIcon><t-icon name="help-circle" size="20px" color="#00a870" /></template>
         </t-cell>
-        <t-cell title="关于旅迹" note="v1.0.0" arrow>
+        <t-cell title="关于旅迹" note="v1.0.0" arrow @click="showAbout = true">
           <template #leftIcon><t-icon name="info-circle" size="20px" color="#8a8a8a" /></template>
         </t-cell>
         <t-cell title="退出登录" @click="logout">
@@ -83,6 +83,34 @@
     </div>
 
     <app-tab-bar active="mine" />
+
+    <!-- 关于旅迹 -->
+    <t-dialog v-model:visible="showAbout" title="关于旅迹" :close-on-overlay-click="true">
+      <div class="about">
+        <div class="about-logo">🧭</div>
+        <div class="about-name">旅迹</div>
+        <div class="about-ver">v1.0.0</div>
+        <p class="about-desc">记录每一次出发：旅行清单、行程规划、足迹地图与旅行相册，让你的每段旅程都被认真收藏。</p>
+        <div class="about-feats">
+          <span>📋 清单规划</span>
+          <span>🗺️ 足迹地图</span>
+          <span>📷 旅行相册</span>
+          <span>🌤️ 天气参考</span>
+        </div>
+      </div>
+    </t-dialog>
+
+    <!-- 帮助与反馈 -->
+    <t-dialog v-model:visible="showHelp" title="帮助与反馈" :close-on-overlay-click="true">
+      <div class="help">
+        <p class="help-h">快速上手</p>
+        <p>1. 在「清单」新建旅行，填写目的地与日期；</p>
+        <p>2. 进入详情规划行程、打包行李、记录预算；</p>
+        <p>3. 旅途中上传照片，按拍摄地整理相册；</p>
+        <p>4.「足迹」会自动解锁你去过的城市。</p>
+        <p class="help-fb">遇到问题或有好建议？欢迎通过邮箱 <b>feedback@lvji.app</b> 联系我们。</p>
+      </div>
+    </t-dialog>
   </div>
 </template>
 
@@ -104,6 +132,8 @@ const photoCount = computed(() => store.travels.reduce((n, t) => n + (t.photos?.
 
 const storage = ref({ used: 0, total: 2 * 1024 * 1024 * 1024, percent: 0 })
 const expanding = ref(false)
+const showAbout = ref(false)
+const showHelp = ref(false)
 
 function fmt(bytes) {
   if (bytes >= 1024 * 1024 * 1024) return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB'
@@ -127,6 +157,12 @@ onMounted(loadStorage)
 
 function goEdit() {
   router.push('/profile-edit')
+}
+function goFavorites() {
+  router.push('/lists?filter=fav')
+}
+function comingSoon(name) {
+  Toast({ message: `${name}功能即将上线`, theme: 'default' })
 }
 function openAdmin() {
   window.location.href = '/admin.html'
@@ -267,5 +303,66 @@ function logout() {
   border-radius: 16px;
   overflow: hidden;
   background: var(--card-bg);
+}
+
+/* 关于 / 帮助弹窗 */
+.about {
+  text-align: center;
+  padding: 4px 4px 8px;
+}
+.about-logo {
+  font-size: 42px;
+  line-height: 1;
+}
+.about-name {
+  font-size: 18px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+.about-ver {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #fff;
+  background: var(--brand);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.about-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin: 12px 4px;
+}
+.about-feats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.about-feats span {
+  font-size: 12px;
+  color: var(--brand);
+  background: var(--brand-light);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.help {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.8;
+  padding: 2px 2px 6px;
+}
+.help-h {
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+.help-fb {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  color: var(--text-1);
 }
 </style>

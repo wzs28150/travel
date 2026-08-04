@@ -30,6 +30,7 @@ export const useTravelStore = defineStore('travel', {
   getters: {
     getTravel: (state) => (id) => state.travels.find((t) => String(t.id) === String(id)),
     doneTravels: (state) => state.travels.filter((t) => t.status === 'done'),
+    favoriteTravels: (state) => state.travels.filter((t) => t.favorite),
     // 已解锁城市集合（来自已完成旅行）
     visitedCities: (state) => {
       const set = new Set()
@@ -75,6 +76,7 @@ export const useTravelStore = defineStore('travel', {
         todos: [],
         budgets: [],
         photos: [],
+        favorite: false,
       }
       const res = await api.post('/travels', payload)
       this.travels.unshift(res.data)
@@ -86,6 +88,15 @@ export const useTravelStore = defineStore('travel', {
       if (t) {
         Object.assign(t, patch)
         this.syncTravel(id)
+      }
+    },
+
+    // 收藏 / 取消收藏
+    toggleFavorite(travelId) {
+      const t = this.getTravel(travelId)
+      if (t) {
+        t.favorite = !t.favorite
+        this.syncTravel(travelId)
       }
     },
 

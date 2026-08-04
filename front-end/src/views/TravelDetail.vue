@@ -2,6 +2,12 @@
   <div class="page detail-page">
     <t-navbar :title="travel?.title || '旅行详情'" left-arrow @left-click="goBack">
       <template #right>
+        <t-icon
+          :name="travel?.favorite ? 'star-filled' : 'star'"
+          size="22px"
+          :style="{ color: travel?.favorite ? '#ffd43b' : '#fff' }"
+          @click="toggleFav"
+        />
         <t-icon name="ellipsis" size="22px" @click="showMenu = true" />
       </template>
     </t-navbar>
@@ -337,6 +343,13 @@ const travel = computed(() => store.getTravel(route.params.id))
 const tab = ref('itinerary')
 
 const goBack = () => router.back()
+
+function toggleFav() {
+  const t = travel.value
+  if (!t) return
+  store.toggleFavorite(t.id)
+  Toast({ message: t.favorite ? '已收藏 ★' : '已取消收藏', theme: 'success' })
+}
 
 const heroStyle = computed(() => {
   const t = travel.value

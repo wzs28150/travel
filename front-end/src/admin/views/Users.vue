@@ -141,7 +141,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, adminApi, getToken, clearToken } from '../../api/http.js'
+import { api, adminApi, getAdminToken, clearAdminToken } from '../../api/http.js'
 
 const router = useRouter()
 const adminNickname = ref('')
@@ -211,7 +211,7 @@ async function load() {
     total.value = res.data.total || 0
   } catch (e) {
     if (e.message && /登录|重新登录/.test(e.message)) {
-      clearToken()
+      clearAdminToken()
       router.replace('/login')
     }
   } finally {
@@ -308,12 +308,12 @@ async function remove(u) {
 }
 
 function logout() {
-  clearToken()
+  clearAdminToken()
   router.replace('/login')
 }
 
 onMounted(() => {
-  if (!getToken()) {
+  if (!getAdminToken()) {
     router.replace('/login')
     return
   }

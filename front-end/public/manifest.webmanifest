@@ -1,0 +1,26 @@
+{
+  "name": "旅迹 · 旅行清单与相册",
+  "short_name": "旅迹",
+  "description": "记录每一次出发：旅行清单、行程规划、足迹地图与旅行相册。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff6f0",
+  "theme_color": "#ff7a45",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

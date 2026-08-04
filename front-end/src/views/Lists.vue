@@ -25,6 +25,7 @@
         <t-tab-panel value="planning" label="计划中" />
         <t-tab-panel value="ongoing" label="进行中" />
         <t-tab-panel value="done" label="已完成" />
+        <t-tab-panel value="fav" label="收藏" />
       </t-tabs>
 
       <div v-if="filtered.length === 0" class="empty">
@@ -40,6 +41,12 @@
           <t-tag :theme="statusTheme(t.status)" variant="light" size="small" class="status-tag">
             {{ statusText(t.status) }}
           </t-tag>
+          <t-icon
+            :name="t.favorite ? 'star-filled' : 'star'"
+            size="20px"
+            :class="['fav-btn', { on: t.favorite }]"
+            @click.stop="toggleFav(t.id)"
+          />
         </div>
         <div class="info">
           <div class="t-title text-ellipsis">{{ t.title }}</div>
@@ -106,8 +113,8 @@
 </template>
 
 <script setup name="Lists">
-import { ref, computed, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Toast } from 'tdesign-mobile-vue'
 import { useTravelStore } from '../stores/travel'
 import regionOptions from '../data/china-pca.json'
@@ -115,6 +122,7 @@ import AppTabBar from '../components/AppTabBar.vue'
 
 const store = useTravelStore()
 const router = useRouter()
+const route = useRoute()
 
 function todayStr() {
   const d = new Date()
@@ -123,9 +131,11 @@ function todayStr() {
 }
 
 const filter = ref('all')
-const filtered = computed(() =>
-  filter.value === 'all' ? store.travels : store.travels.filter((t) => t.status === filter.value)
-)
+const filtered = computed(() => {
+  if (filter.value === 'all') return store.travels
+  if (filter.value === 'fav') return store.favoriteTravels
+  return store.travels.filter((t) => t.status === filter.value)
+})
 
 const showCreate = ref(false)
 const form = reactive({ title: '', regionCode: '', regionText: '', cityName: '', startDate: todayStr(), endDate: todayStr(), budgetTotal: '' })
@@ -181,6 +191,15 @@ async function createTravel() {
 function openTravel(id) {
   router.push(`/travel/${id}`)
 }
+
+function toggleFav(id) {
+  store.toggleFavorite(id)
+}
+
+// 支持从「我的收藏」跳转：/lists?filter=fav
+onMounted(() => {
+  if (route.query.filter === 'fav') filter.value = 'fav'
+})
 
 function coverStyle(t) {
   const cover = t.cover || t.photos?.[0]?.url
@@ -289,5 +308,16 @@ const todoCount = (t) => `${t.todos?.filter((x) => x.done).length || 0}/${t.todo
   display: flex;
   gap: 12px;
   margin-top: 20px;
+}
+.fav-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 4;
+  color: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+.fav-btn.on {
+  color: #ffd43b;
 }
 </style>

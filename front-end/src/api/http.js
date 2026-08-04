@@ -13,11 +13,24 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
-async function request(path, { method = 'GET', body, auth = true } = {}) {
+// 管理后台独立 token（与客户端 lvji-token 隔离，避免互相覆盖登录态）
+const ADMIN_TOKEN_KEY = 'lvji-admin-token'
+export function getAdminToken() {
+  return localStorage.getItem(ADMIN_TOKEN_KEY) || ''
+}
+export function setAdminToken(t) {
+  if (t) localStorage.setItem(ADMIN_TOKEN_KEY, t)
+  else localStorage.removeItem(ADMIN_TOKEN_KEY)
+}
+export function clearAdminToken() {
+  localStorage.removeItem(ADMIN_TOKEN_KEY)
+}
+
+async function request(path, { method = 'GET', body, auth = true, token } = {}) {
   const headers = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (auth) {
-    const t = getToken()
+    const t = token || getToken()
     if (t) headers['Authorization'] = 'Bearer ' + t
   }
   const res = await fetch(BASE + path, {
@@ -46,13 +59,13 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
 }
 
 export const api = {
-  get: (p) => request(p),
-  post: (p, b) => request(p, { method: 'POST', body: b }),
-  put: (p, b) => request(p, { method: 'PUT', body: b }),
-  del: (p) => request(p, { method: 'DELETE' }),
+  get: (p, opt) => request(p, { ...opt }),
+  post: (p, b, opt) => request(p, { method: 'POST', body: b, ...opt }),
+  put: (p, b, opt) => request(p, { method: 'PUT', body: b, ...opt }),
+  del: (p, opt) => request(p, { method: 'DELETE', ...opt }),
 }
 
-// 管理后台接口（需管理员 token）
+// 管理后台接口（需管理员 token，与客户端 token 隔离）
 export const adminApi = {
   list(params = {}) {
     const q = new URLSearchParams();
@@ -60,16 +73,16 @@ export const adminApi = {
     if (params.pageSize) q.set('pageSize', params.pageSize);
     if (params.keyword) q.set('keyword', params.keyword);
     const qs = q.toString();
-    return api.get('/admin/users' + (qs ? '?' + qs : ''));
+    return api.get('/admin/users' + (qs ? '?' + qs : ''), { token: getAdminToken() });
   },
   create(body) {
-    return api.post('/admin/users', body);
+    return api.post('/admin/users', body, { token: getAdminToken() });
   },
   update(id, body) {
-    return api.put('/admin/users/' + id, body);
+    return api.put('/admin/users/' + id, body, { token: getAdminToken() });
   },
   remove(id) {
-    return api.del('/admin/users/' + id);
+    return api.del('/admin/users/' + id, { token: getAdminToken() });
   },
 };
 

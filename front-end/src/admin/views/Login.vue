@@ -21,7 +21,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, setToken } from '../../api/http.js'
+import { api, setAdminToken } from '../../api/http.js'
 
 const router = useRouter()
 const username = ref('')
@@ -43,7 +43,7 @@ async function onLogin() {
       password: password.value,
     })
     const { token } = res.data
-    setToken(token)
+    setAdminToken(token)
     router.replace('/users')
   } catch (e) {
     error.value = e.message || '登录失败'

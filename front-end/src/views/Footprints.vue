@@ -55,7 +55,12 @@
       <div class="map-legend">
         <span><i class="dot orange"></i> 去过的地方（{{ visitedList.length }}）</span>
       </div>
-      <div v-if="!mapReady" class="map-loading">地图加载中…</div>
+      <div v-if="mapError" class="map-fallback">
+        <t-icon name="map" size="40px" />
+        <p>地图组件需要配置腾讯地图 Key</p>
+        <span>你走过的城市可在「足迹墙」中查看 ✨</span>
+      </div>
+      <div v-else-if="!mapReady" class="map-loading">地图加载中…</div>
     </div>
 
     <!-- 足迹墙 -->
@@ -86,6 +91,7 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTravelStore, CITIES } from '../stores/travel'
 import { REGIONS } from '../data/cities'
+import { ensureTMap } from '../utils/tmap'
 import AppTabBar from '../components/AppTabBar.vue'
 
 const store = useTravelStore()
@@ -114,29 +120,45 @@ function coverStyle(t) {
   return { background: 'linear-gradient(135deg,#ffd8a8,#ffa94d)' }
 }
 
-// ---- 腾讯地图 ----
+// ---- 腾讯地图（按需加载，未配置 Key 时优雅降级） ----
 const mapReady = ref(false)
+const mapError = ref(false)
+const tmapLoading = ref(false)
 let mapInstance = null
 let markerLayer = null
 
-function initMap() {
-  if (mapInstance || typeof window.TMap === 'undefined') {
-    if (typeof window.TMap === 'undefined') {
-      // SDK 尚未加载，稍后重试
-      setTimeout(initMap, 500)
-    }
-    if (mapInstance) refreshMarkers()
+function buildMap() {
+  if (mapInstance) {
+    refreshMarkers()
     return
   }
   const center = visitedList.value[0]
-    ? new TMap.LatLng(visitedList.value[0].lat, visitedList.value[0].lng)
-    : new TMap.LatLng(35.86166, 104.195397) // 中国中心
-  mapInstance = new TMap.Map('fp-map', {
+    ? new window.TMap.LatLng(visitedList.value[0].lat, visitedList.value[0].lng)
+    : new window.TMap.LatLng(35.86166, 104.195397) // 中国中心
+  mapInstance = new window.TMap.Map('fp-map', {
     zoom: visitedList.value.length ? 5 : 4,
-    center
+    center,
   })
   mapReady.value = true
   refreshMarkers()
+}
+
+function initMap() {
+  if (mapReady.value || mapError.value) return
+  if (typeof window.TMap !== 'undefined') {
+    buildMap()
+    return
+  }
+  tmapLoading.value = true
+  ensureTMap()
+    .then(() => {
+      tmapLoading.value = false
+      buildMap()
+    })
+    .catch(() => {
+      tmapLoading.value = false
+      mapError.value = true
+    })
 }
 
 function refreshMarkers() {
@@ -311,6 +333,28 @@ onMounted(() => {
   justify-content: center;
   color: var(--text-3);
   pointer-events: none;
+}
+.map-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 35%, var(--brand-light), #fff 70%);
+  color: var(--text-2);
+  padding: 0 24px;
+}
+.map-fallback p {
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 4px 0 0;
+}
+.map-fallback span {
+  font-size: 12px;
 }
 /* 足迹墙 */
 .wall-tip {
