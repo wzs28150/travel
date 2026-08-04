@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js';
 import travelRoutes from './routes/travels.js';
 import uploadRoutes from './routes/upload.js';
 import adminRoutes from './routes/admin.js';
+import storageRequestRoutes from './routes/storageRequests.js';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/travels', travelRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin/users', adminRoutes);
+app.use('/api/admin/storage-requests', storageRequestRoutes);
 
 // 启动引导：若库中尚无管理员，且配置了 ADMIN_USERNAME/ADMIN_PASSWORD，则自动创建首个管理员
 async function bootstrapAdmin() {

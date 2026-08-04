@@ -1,11 +1,13 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Login from './views/Login.vue'
 import Users from './views/Users.vue'
+// import StorageRequests from './views/StorageRequests.vue'
 import { getAdminToken } from '../api/http.js'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login },
   { path: '/users', name: 'Users', component: Users },
+  // { path: '/storage-requests', name: 'StorageRequests', component: StorageRequests },
   { path: '/', redirect: '/users' },
 ]
 

@@ -21,6 +21,23 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
+-- 存储扩容申请（普通用户提交，管理员后台审批通过后生效）
+CREATE TABLE IF NOT EXISTS `storage_requests` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`      INT UNSIGNED NOT NULL COMMENT '申请人',
+  `requested_gb` INT UNSIGNED NOT NULL COMMENT '申请增加的空间(GB)',
+  `reason`       VARCHAR(255) DEFAULT '' COMMENT '申请理由',
+  `status`       VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT 'pending/approved/rejected',
+  `admin_id`     INT UNSIGNED DEFAULT NULL COMMENT '处理人(管理员)',
+  `admin_note`   VARCHAR(255) DEFAULT '' COMMENT '处理备注',
+  `created_at`   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `fk_sr_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='存储扩容申请';
+
 -- 旅行表（行程/行李/待办/预算/相册以 JSON 存于 content 字段）
 CREATE TABLE IF NOT EXISTS `travels` (
   `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,

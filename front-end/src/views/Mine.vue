@@ -47,7 +47,8 @@
         />
         <div class="s-foot">
           <span>剩余 {{ freeText }}</span>
-          <t-button size="extra-small" theme="primary" variant="outline" :loading="expanding" @click="expand">扩容</t-button>
+          <t-button v-if="!pendingRequest" size="extra-small" theme="primary" variant="outline" @click="applyVisible = true">申请扩容</t-button>
+          <t-tag v-else theme="warning" variant="light" size="small">审核中 · +{{ pendingRequest.requestedGb }}GB</t-tag>
         </div>
       </div>
 
@@ -111,6 +112,28 @@
         <p class="help-fb">遇到问题或有好建议？欢迎通过邮箱 <b>feedback@lvji.app</b> 联系我们。</p>
       </div>
     </t-dialog>
+
+    <!-- 申请扩容 -->
+    <t-dialog
+      v-model:visible="applyVisible"
+      title="申请扩容"
+      :close-on-overlay-click="true"
+      :confirm-btn="{ content: '提交申请', loading: applyLoading }"
+      :cancel-btn="{ content: '取消' }"
+      @confirm="submitApply"
+    >
+      <div class="apply">
+        <p class="apply-tip">当前剩余 {{ freeText }}，如需更多空间请提交申请，由管理员在后台审核通过后生效。</p>
+        <label class="apply-lbl">申请增加容量</label>
+        <div class="gb-opts">
+          <button v-for="g in [5, 20, 50, 100]" :key="g" class="gb-opt" :class="{ active: applyGb === g }" @click="applyGb = g">+{{ g }}GB</button>
+        </div>
+        <label class="apply-lbl">自定义（GB，1–500）</label>
+        <input v-model.number="applyGb" type="number" min="1" max="500" class="apply-input" />
+        <label class="apply-lbl">申请理由（可选）</label>
+        <textarea v-model="applyReason" rows="3" class="apply-text" placeholder="例如：这次长途旅行照片较多"></textarea>
+      </div>
+    </t-dialog>
   </div>
 </template>
 
@@ -131,9 +154,16 @@ const user = computed(() => auth.user || {})
 const photoCount = computed(() => store.travels.reduce((n, t) => n + (t.photos?.length || 0), 0))
 
 const storage = ref({ used: 0, total: 2 * 1024 * 1024 * 1024, percent: 0 })
-const expanding = ref(false)
 const showAbout = ref(false)
 const showHelp = ref(false)
+const applyVisible = ref(false)
+const applyGb = ref(20)
+const applyReason = ref('')
+const applyLoading = ref(false)
+const myRequest = ref(null)
+const pendingRequest = computed(() =>
+  myRequest.value && myRequest.value.status === 'pending' ? myRequest.value : null
+)
 
 function fmt(bytes) {
   if (bytes >= 1024 * 1024 * 1024) return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB'
@@ -152,8 +182,17 @@ async function loadStorage() {
     storage.value = res.data
   } catch (e) {}
 }
+async function loadRequest() {
+  try {
+    const res = await api.get('/auth/storage/request')
+    myRequest.value = res.data
+  } catch (e) {}
+}
 
-onMounted(loadStorage)
+onMounted(() => {
+  loadStorage()
+  loadRequest()
+})
 
 function goEdit() {
   router.push('/profile-edit')
@@ -167,16 +206,23 @@ function comingSoon(name) {
 function openAdmin() {
   window.location.href = '/admin.html'
 }
-async function expand() {
-  expanding.value = true
+async function submitApply() {
+  if (!applyGb || applyGb <= 0) {
+    Toast({ message: '请填写有效的扩容容量', theme: 'error' })
+    return
+  }
+  applyLoading.value = true
   try {
-    const res = await api.put('/auth/storage/expand')
-    storage.value = res.data
-    Toast({ message: '扩容成功，+2GB 🎉', theme: 'success' })
+    await api.post('/auth/storage/apply', { requestedGb: applyGb, reason: applyReason })
+    Toast({ message: '申请已提交，等待管理员审核', theme: 'success' })
+    applyVisible.value = false
+    applyReason.value = ''
+    loadRequest()
+    loadStorage()
   } catch (e) {
-    Toast({ message: e.message || '扩容失败', theme: 'error' })
+    Toast({ message: e.message || '提交失败', theme: 'error' })
   } finally {
-    expanding.value = false
+    applyLoading.value = false
   }
 }
 function logout() {
@@ -364,5 +410,54 @@ function logout() {
   padding-top: 10px;
   border-top: 1px dashed var(--border);
   color: var(--text-1);
+}
+
+/* 申请扩容弹窗 */
+.apply-tip {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+.apply-lbl {
+  display: block;
+  font-size: 13px;
+  color: var(--text-1);
+  margin: 12px 0 6px;
+}
+.gb-opts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.gb-opt {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  font-size: 13px;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.gb-opt.active {
+  border-color: var(--brand);
+  color: var(--brand);
+  font-weight: 700;
+}
+.apply-input,
+.apply-text {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  color: var(--text-1);
+  background: var(--card-bg);
+}
+.apply-input:focus,
+.apply-text:focus {
+  border-color: var(--brand);
 }
 </style>

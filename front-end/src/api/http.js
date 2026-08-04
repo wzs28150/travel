@@ -86,6 +86,22 @@ export const adminApi = {
   },
 };
 
+// 存储扩容申请（管理员审批）
+export const storageRequestApi = {
+  list(params = {}) {
+    const q = new URLSearchParams();
+    if (params.status) q.set('status', params.status);
+    const qs = q.toString();
+    return api.get('/admin/storage-requests' + (qs ? '?' + qs : ''), { token: getAdminToken() });
+  },
+  approve(id) {
+    return api.put('/admin/storage-requests/' + id + '/approve', {}, { token: getAdminToken() });
+  },
+  reject(id, note) {
+    return api.put('/admin/storage-requests/' + id + '/reject', { note }, { token: getAdminToken() });
+  },
+};
+
 // 图片上传（multipart）
 export async function uploadFile(file) {
   const fd = new FormData()

@@ -151,20 +151,56 @@ router.get('/storage', auth, async (req, res) => {
   }
 });
 
-// 扩容 +2GB
-router.put('/storage/expand', auth, async (req, res) => {
+// 申请扩容（提交后等待管理员审核，不会立即生效）
+router.post('/storage/apply', auth, async (req, res) => {
   try {
-    await db.query(
-      'UPDATE users SET storage_limit = storage_limit + ? WHERE id = ?',
-      [2 * 1024 * 1024 * 1024, req.user.id]
+    const { requestedGb, reason } = req.body || {};
+    const gb = Number(requestedGb);
+    if (!gb || gb <= 0) {
+      return res.status(400).json({ code: 400, message: '请填写有效的扩容容量' });
+    }
+    if (gb > 500) {
+      return res.status(400).json({ code: 400, message: '单次申请不能超过 500GB' });
+    }
+    // 已有待审核申请则不允许重复提交
+    const [pend] = await db.query(
+      "SELECT id FROM storage_requests WHERE user_id = ? AND status = 'pending'",
+      [req.user.id]
     );
-    const [rows] = await db.query('SELECT storage_limit FROM users WHERE id = ?', [req.user.id]);
-    const total = Number(rows[0].storage_limit);
-    const used = await computeStorage(req.user.id);
+    if (pend.length) {
+      return res.status(409).json({ code: 409, message: '已有一条待审核的扩容申请，请等待处理' });
+    }
+    await db.query(
+      'INSERT INTO storage_requests (user_id, requested_gb, reason, status) VALUES (?, ?, ?, ?)',
+      [req.user.id, gb, (reason || '').slice(0, 255), 'pending']
+    );
+    res.json({ code: 0, message: '申请已提交，等待管理员审核' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '服务器错误' });
+  }
+});
+
+// 查询我的扩容申请状态（用于前端展示「审核中」）
+router.get('/storage/request', auth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM storage_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 1',
+      [req.user.id]
+    );
+    const r = rows[0];
     res.json({
       code: 0,
-      message: '扩容成功',
-      data: { used, total, percent: Math.min(100, (used / total) * 100) },
+      data: r
+        ? {
+            id: r.id,
+            requestedGb: r.requested_gb,
+            reason: r.reason,
+            status: r.status,
+            adminNote: r.admin_note,
+            createdAt: r.created_at,
+          }
+        : null,
     });
   } catch (e) {
     console.error(e);
