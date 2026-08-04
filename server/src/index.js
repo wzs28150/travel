@@ -10,6 +10,7 @@ import travelRoutes from './routes/travels.js';
 import uploadRoutes from './routes/upload.js';
 import adminRoutes from './routes/admin.js';
 import storageRequestRoutes from './routes/storageRequests.js';
+import adminStatsRoutes from './routes/adminStats.js';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/travels', travelRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin/users', adminRoutes);
 app.use('/api/admin/storage-requests', storageRequestRoutes);
+app.use('/api/admin/stats', adminStatsRoutes);
 
 // 启动自检：兼容老库升级（init.sql 仅在全新卷首次执行，已有库不会自动补列/建表）
 // 幂等：is_admin 列缺失则补，storage_requests 表缺失则建；出错仅告警不阻断启动。

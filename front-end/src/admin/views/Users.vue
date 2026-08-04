@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <AdminLayout title="用户管理" active="users">
     <div class="toolbar">
           <input
             v-model="keyword"
@@ -109,15 +109,17 @@
         </div>
       </div>
     </div>
-  </div>
+  </AdminLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { adminApi } from '../../api/http.js'
-// import AdminLayout from '../components/AdminLayout.vue'
+import { useRouter } from 'vue-router'
+import { adminApi, clearAdminToken } from '../../api/http.js'
+import AdminLayout from '../components/AdminLayout.vue'
 
 const users = ref([])
+const router = useRouter()
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)

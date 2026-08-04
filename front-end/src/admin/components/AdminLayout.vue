@@ -7,8 +7,12 @@
         <span>旅迹后台</span>
       </div>
       <nav class="side-nav">
+        <a class="side-item" :class="{ active: active === 'dashboard' }" @click="go('/dashboard')">📊 概览</a>
         <a class="side-item" :class="{ active: active === 'users' }" @click="go('/users')">👥 用户管理</a>
-        <a class="side-item" :class="{ active: active === 'storage' }" @click="go('/storage-requests')">📦 存储扩容</a>
+        <a class="side-item" :class="{ active: active === 'storage' }" @click="go('/storage-requests')">
+          📦 存储扩容
+          <span v-if="pendingCount" class="badge">{{ pendingCount }}</span>
+        </a>
       </nav>
       <div class="side-foot">旅迹 Travel Admin</div>
     </aside>
@@ -33,7 +37,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, getAdminToken, clearAdminToken } from '../../api/http.js'
+import { api, getAdminToken, clearAdminToken, statsApi } from '../../api/http.js'
 
 const props = defineProps({
   title: { type: String, default: '' },
@@ -42,16 +46,25 @@ const props = defineProps({
 
 const router = useRouter()
 const adminNickname = ref('')
+const pendingCount = ref(0)
 
 function go(p) {
   if (p !== router.currentRoute.value.path) router.push(p)
 }
 async function loadMe() {
   try {
-    const res = await api.get('/auth/me')
+    const res = await api.get('/auth/me', { token: getAdminToken() })
     adminNickname.value = res.data?.nickname || ''
   } catch (e) {
     /* 登录守卫已保证有 token */
+  }
+}
+async function loadStats() {
+  try {
+    const res = await statsApi.overview()
+    pendingCount.value = res.data?.pendingRequests || 0
+  } catch (e) {
+    /* 角标非关键，失败不影响使用 */
   }
 }
 function logout() {
@@ -65,6 +78,7 @@ onMounted(() => {
     return
   }
   loadMe()
+  loadStats()
 })
 </script>
 
@@ -105,6 +119,22 @@ onMounted(() => {
   font-size: 14px;
   cursor: pointer;
   color: #cfd3dc;
+  position: relative;
+}
+.side-item .badge {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ff5b5b;
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
 }
 .side-item:hover {
   background: rgba(255, 255, 255, 0.06);

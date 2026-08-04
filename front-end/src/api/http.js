@@ -46,7 +46,9 @@ async function request(path, { method = 'GET', body, auth = true, token } = {}) 
   }
   // 未登录 / 登录过期
   if (res.status === 401) {
-    clearToken()
+    // 管理端请求（传入了 admin token）失败则清管理员登录态；否则清客户端登录态
+    if (token) clearAdminToken();
+    else clearToken()
     if (location.hash.indexOf('#/login') === -1 && location.hash.indexOf('#/register') === -1) {
       location.hash = '#/login'
     }
@@ -99,6 +101,13 @@ export const storageRequestApi = {
   },
   reject(id, note) {
     return api.put('/admin/storage-requests/' + id + '/reject', { note }, { token: getAdminToken() });
+  },
+};
+
+// 后台概览统计
+export const statsApi = {
+  overview() {
+    return api.get('/admin/stats', { token: getAdminToken() });
   },
 };
 
