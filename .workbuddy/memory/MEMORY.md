@@ -40,3 +40,4 @@
 - mysql2 默认把 DATE 读成 JS Date，已加 `dateStrings:true` 修复（`server/src/db.js`）。
 - config.baseUrl 用 `??` 而非 `||`，以便 Docker 下空串返回相对路径（图片由 nginx 反代）。
 - vite build 在本沙箱清空旧 dist 时会报 trash 错误（非代码问题），先 `rm -rf dist` 再 build。
+- ⚠️ **沙箱 vite 多入口构建崩溃（重要复发坑）**：本沙箱 Windows node v22.22.2 跑 `vite build` 多入口（main+admin 双 input）稳定崩 worker 线程 `Cannot read properties of undefined (reading 'includes')`，vite reporter 自身崩溃吞掉真实错误；连 git 基线双入口也崩 → **与代码无关**，是沙箱 vite v6.4.3 + Windows node 的 bug。**构建/重打镜像一律用 Docker 容器内 Linux node**：`docker compose build frontend backend` → `docker compose up -d --force-recreate`。单入口（仅 main 或仅 admin）本地 OK，双入口同时必崩。
