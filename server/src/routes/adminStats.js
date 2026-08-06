@@ -35,6 +35,10 @@ router.get('/', async (req, res) => {
       storageUsedTotal += await computeStorage(u.id);
     }
 
+    // 服务器可用空间（安装时记录的快照）：来自 server_meta，缺失则兜底 20GB
+    const [metaRows] = await db.query("SELECT v FROM server_meta WHERE k = 'server_storage_total_bytes'");
+    const serverStorageTotal = metaRows.length ? Number(metaRows[0].v) || 20 * 1024 ** 3 : 20 * 1024 ** 3;
+
     res.json({
       code: 0,
       data: {
@@ -43,6 +47,7 @@ router.get('/', async (req, res) => {
         travelTotal,
         storageLimitTotal,
         storageUsedTotal,
+        serverStorageTotal,
         pendingRequests,
       },
     });

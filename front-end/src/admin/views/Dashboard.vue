@@ -18,12 +18,12 @@
         <div class="card-sub">{{ s.pendingRequests > 0 ? '需尽快处理' : '暂无待办' }}</div>
       </div>
       <div class="card wide">
-        <div class="card-label">存储用量</div>
-        <div class="card-num">{{ fmt(s.storageUsedTotal) }} <span class="card-of">/ {{ fmt(s.storageLimitTotal) }}</span></div>
+        <div class="card-label">存储用量（全站用户）</div>
+        <div class="card-num">{{ fmt(s.storageUsedTotal) }} <span class="card-of">/ {{ fmt(s.serverStorageTotal) }}</span></div>
         <div class="bar">
           <div class="bar-in" :class="usedClass" :style="{ width: usedPercent + '%' }"></div>
         </div>
-        <div class="card-sub">已用 {{ usedPercent }}%</div>
+        <div class="card-sub">服务器可用空间（安装时记录）：已用 {{ usedPercent }}%</div>
       </div>
     </div>
 
@@ -65,14 +65,15 @@ const s = ref({
   travelTotal: 0,
   storageLimitTotal: 0,
   storageUsedTotal: 0,
+  serverStorageTotal: 0,
   pendingRequests: 0,
 })
 const pending = ref([])
 
 const usedPercent = computed(() => {
-  const lim = Number(s.value.storageLimitTotal) || 0
-  if (!lim) return 0
-  return Math.min(100, Math.round((Number(s.value.storageUsedTotal) / lim) * 100))
+  const total = Number(s.value.serverStorageTotal) || 0
+  if (!total) return 0
+  return Math.min(100, Math.round((Number(s.value.storageUsedTotal) / total) * 100))
 })
 const usedClass = computed(() => {
   const p = usedPercent.value

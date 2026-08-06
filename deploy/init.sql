@@ -56,3 +56,11 @@ CREATE TABLE IF NOT EXISTS `travels` (
   KEY `idx_user` (`user_id`),
   CONSTRAINT `fk_travel_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='旅行表';
+
+-- 服务端元信息（键值对）：用于持久化安装时记录的服务器可用空间等
+CREATE TABLE IF NOT EXISTS `server_meta` (
+  `k`          VARCHAR(64) NOT NULL COMMENT '配置键',
+  `v`          TEXT         COMMENT '配置值',
+  `updated_at` DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`k`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务端元信息(键值对)';

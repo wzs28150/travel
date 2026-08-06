@@ -11,6 +11,7 @@ import uploadRoutes from './routes/upload.js';
 import adminRoutes from './routes/admin.js';
 import storageRequestRoutes from './routes/storageRequests.js';
 import adminStatsRoutes from './routes/adminStats.js';
+import { getFreeDiskBytes } from './utils/disk.js';
 
 const app = express();
 
@@ -62,8 +63,49 @@ async function ensureSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='存储扩容申请'
     `);
     console.log('[schema] storage_requests 表已就绪');
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS \`server_meta\` (
+        \`k\`          VARCHAR(64) NOT NULL COMMENT '配置键',
+        \`v\`          TEXT         COMMENT '配置值',
+        \`updated_at\` DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`k\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务端元信息(键值对)'
+    `);
+    console.log('[schema] server_meta 表已就绪');
   } catch (e) {
     console.error('[schema] 自检失败（不影响启动，请检查数据库）：', e.message);
+  }
+}
+
+// 记录「安装时服务器可用空间」：仅首次写入，之后保持不变（快照）。
+// - 已设置环境变量 SERVER_STORAGE_TOTAL_GB 则用它；
+// - 否则：库里已有用户（已安装过的程序）→ 默认 20GB；全新安装 → 记录上传目录所在磁盘的真实可用空间。
+async function seedServerStorage() {
+  try {
+    const [rows] = await db.query("SELECT v FROM server_meta WHERE k = 'server_storage_total_bytes'");
+    if (rows.length) return; // 已记录过，保持安装时快照不变
+    const envGb = Number(process.env.SERVER_STORAGE_TOTAL_GB || 0);
+    let totalBytes = 0;
+    if (envGb > 0) {
+      totalBytes = Math.round(envGb * 1024 ** 3);
+    } else {
+      const [users] = await db.query('SELECT COUNT(*) AS c FROM users');
+      const hasData = (users[0]?.c || 0) > 0;
+      if (hasData) {
+        totalBytes = 20 * 1024 ** 3; // 已安装过的程序：默认 20GB
+      } else {
+        totalBytes = getFreeDiskBytes(config.uploadDir); // 全新安装：记录真实可用空间
+        if (!totalBytes) totalBytes = 20 * 1024 ** 3; // 兜底
+      }
+    }
+    const val = String(totalBytes);
+    await db.query(
+      "INSERT INTO server_meta (k, v) VALUES ('server_storage_total_bytes', ?) ON DUPLICATE KEY UPDATE v = ?",
+      [val, val]
+    );
+    console.log(`[schema] 已记录安装时服务器可用空间：${(totalBytes / 1024 ** 3).toFixed(2)} GB`);
+  } catch (e) {
+    console.error('[schema] 记录服务器可用空间失败（不影响启动）：', e.message);
   }
 }
 
@@ -101,5 +143,6 @@ app.listen(config.port, async () => {
   console.log(`[server] 旅迹后端已启动: http://localhost:${config.port}`);
   console.log(`[server] 上传目录: ${config.uploadDir}`);
   await ensureSchema();
+  await seedServerStorage();
   bootstrapAdmin();
 });

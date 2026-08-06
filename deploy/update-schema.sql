@@ -43,3 +43,24 @@ CREATE TABLE IF NOT EXISTS `storage_requests` (
 
 -- ③ 可选：将某个已有账号提升为管理员（去掉前导 -- 并改成你的账号）
 -- UPDATE users SET is_admin = 1 WHERE username = 'admin';
+
+-- ④ 建 server_meta 表（若不存在），用于持久化「安装时服务器可用空间」
+CREATE TABLE IF NOT EXISTS `server_meta` (
+  `k`          VARCHAR(64) NOT NULL COMMENT '配置键',
+  `v`          TEXT         COMMENT '配置值',
+  `updated_at` DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`k`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务端元信息(键值对)';
+
+-- ⑤ 写入「安装时服务器可用空间」快照（仅当尚未记录时）
+--    - 已安装过的程序（users 表已有数据）：默认 20GB
+--    - 全新安装（无用户）：请改为 `df` 命令查看上传目录所在磁盘的真实可用空间后填入
+--    - 也可在 docker-compose 用环境变量 SERVER_STORAGE_TOTAL_GB 强制指定（GB）
+-- 说明：后端启动会自动写入等效值，这里仅作手动可控补录。
+SET @has_meta = (SELECT COUNT(*) FROM server_meta WHERE k = 'server_storage_total_bytes');
+SET @user_cnt = (SELECT COUNT(*) FROM users);
+SET @gb = IF(@user_cnt > 0, 20, 20);  -- 全新安装请改这里为真实 GB 数，例如 200
+SET @bytes = ROUND(@gb * 1024 * 1024 * 1024);
+INSERT INTO server_meta (k, v)
+SELECT 'server_storage_total_bytes', @bytes
+WHERE @has_meta = 0;

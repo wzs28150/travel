@@ -44,6 +44,9 @@ services:
       JWT_EXPIRES: 7d
       UPLOAD_DIR: uploads
       STORAGE_LIMIT: 2147483648
+      # 安装时服务器可用空间上限（GB）。留空则：已安装过的程序默认 20GB；全新安装自动记录上传目录所在磁盘真实可用空间。
+      # 如需强制指定，通过宿主环境变量注入，例如：SERVER_STORAGE_TOTAL_GB=200 docker compose up -d
+      SERVER_STORAGE_TOTAL_GB: ${SERVER_STORAGE_TOTAL_GB:-}
       # 首个管理员引导（仅当库中尚无管理员时生效）。请通过宿主环境变量注入，例如：
       #   ADMIN_USERNAME=admin ADMIN_PASSWORD='****' docker compose up -d
       ADMIN_USERNAME: ${ADMIN_USERNAME:-}
